@@ -34,16 +34,44 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('File is too large (max 2MB). Please use an optimized image.');
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      callback(reader.result as string);
+    // Auto-compress image using canvas before storing
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const MAX_SIZE = 1200;
+      let { width, height } = img;
+
+      // Scale down if too large
+      if (width > MAX_SIZE || height > MAX_SIZE) {
+        if (width > height) {
+          height = Math.round((height * MAX_SIZE) / width);
+          width = MAX_SIZE;
+        } else {
+          width = Math.round((width * MAX_SIZE) / height);
+          height = MAX_SIZE;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Export as JPEG at 80% quality (dramatically smaller than raw PNG)
+      const compressed = canvas.toDataURL('image/jpeg', 0.8);
+      URL.revokeObjectURL(objectUrl);
+      callback(compressed);
     };
-    reader.readAsDataURL(file);
+
+    img.src = objectUrl;
   };
 
   const openAddModal = () => {
