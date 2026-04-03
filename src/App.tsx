@@ -20,33 +20,39 @@ function MainApp() {
     return localStorage.getItem('aba_admin_auth') === 'true';
   });
 
-  // Handle URL hash or simple routing
+  // Handle URL path and hash routing
   useEffect(() => {
-    const handleHash = () => {
-      const hash = window.location.hash.replace('#', '') as Page;
-      const path = window.location.pathname.replace('/', '') as Page;
-      
-      const targetPage = hash || (path === 'admin' ? 'admin' : 'home');
+    const handleRoute = () => {
+      const hash = window.location.hash.replace('#', '');
+      const rawPath = window.location.pathname.replace(/^\//, '');
 
-      if (['home', 'about', 'contact', 'science', 'privacy', 'admin-login', 'admin-dashboard', 'admin'].includes(targetPage)) {
-        // Redirect to login if trying to access dashboard/admin while not authenticated
-        if ((targetPage === 'admin-dashboard' || targetPage === 'admin') && !isAuthenticated) {
-          setCurrentPage('admin-login');
-          if (targetPage === 'admin') {
-            // We stay on /admin but show login
-          } else {
-            window.location.hash = 'admin-login';
-          }
-        } else if (targetPage === 'admin' && isAuthenticated) {
-          setCurrentPage('admin-dashboard');
-        } else {
-          setCurrentPage(targetPage as Page);
-        }
+      // Path takes priority over hash (so /admin-login works as a real URL)
+      const validPages = ['home', 'about', 'contact', 'science', 'privacy', 'admin-login', 'admin-dashboard', 'admin'];
+      let targetPage: Page = 'home';
+
+      if (validPages.includes(rawPath)) {
+        targetPage = rawPath as Page;
+      } else if (validPages.includes(hash)) {
+        targetPage = hash as Page;
+      }
+
+      // Guard: redirect to login if not authenticated
+      if ((targetPage === 'admin-dashboard' || targetPage === 'admin') && !isAuthenticated) {
+        setCurrentPage('admin-login');
+      } else if (targetPage === 'admin' && isAuthenticated) {
+        setCurrentPage('admin-dashboard');
+      } else {
+        setCurrentPage(targetPage);
       }
     };
-    window.addEventListener('hashchange', handleHash);
-    handleHash();
-    return () => window.removeEventListener('hashchange', handleHash);
+
+    window.addEventListener('hashchange', handleRoute);
+    window.addEventListener('popstate', handleRoute);
+    handleRoute();
+    return () => {
+      window.removeEventListener('hashchange', handleRoute);
+      window.removeEventListener('popstate', handleRoute);
+    };
   }, [isAuthenticated]);
 
   const handleLogin = () => {
