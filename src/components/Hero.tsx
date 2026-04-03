@@ -38,6 +38,16 @@ export const Hero: React.FC = () => {
         </motion.h1>
       </div>
 
+      {/* Hero Subtitle - positioned below title, above product */}
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
+        className="relative z-30 mt-4 mb-2 text-white/80 font-medium text-lg text-center max-w-xl mx-auto px-4"
+      >
+        {hero.subtitle}
+      </motion.p>
+
       {/* Product Image */}
       <motion.div 
         initial={{ opacity: 0, scale: 0.8, y: 40 }}
@@ -73,16 +83,6 @@ export const Hero: React.FC = () => {
           )}
         </motion.div>
       </motion.div>
-
-      {/* Hero Subtitle */}
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.5 }}
-        className="relative z-30 mt-6 text-white/80 font-medium text-lg text-center max-w-xl mx-auto"
-      >
-        {hero.subtitle}
-      </motion.p>
 
       {/* Bottom CTA */}
       <motion.div 
