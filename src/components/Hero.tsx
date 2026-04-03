@@ -24,7 +24,7 @@ export const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="font-display font-black text-[15vw] leading-[0.8] text-[#ccff00] text-center tracking-tighter drop-shadow-2xl whitespace-nowrap"
+          className="font-display font-black text-[18vw] md:text-[15vw] leading-[0.8] text-[#ccff00] text-center tracking-tighter drop-shadow-2xl whitespace-nowrap"
         >
           {hero.titleTop}
         </motion.h1>
@@ -32,7 +32,7 @@ export const Hero: React.FC = () => {
           initial={{ opacity: 0, y: -50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-          className="font-display font-black text-[14vw] leading-[0.9] text-outline text-center tracking-tighter whitespace-nowrap"
+          className="font-display font-black text-[16vw] md:text-[14vw] leading-[0.9] text-outline text-center tracking-tighter whitespace-nowrap"
         >
           {hero.titleBottom}
         </motion.h1>
@@ -43,7 +43,7 @@ export const Hero: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.4 }}
-        className="relative z-30 mt-4 mb-2 text-white/80 font-medium text-lg text-center max-w-xl mx-auto px-4"
+        className="relative z-30 mt-4 md:mt-8 mb-2 text-white/90 font-medium text-base md:text-lg text-center max-w-xl mx-auto px-4"
       >
         {hero.subtitle}
       </motion.p>
@@ -53,7 +53,7 @@ export const Hero: React.FC = () => {
         initial={{ opacity: 0, scale: 0.8, y: 40 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-        className="relative z-20 flex justify-center items-center h-[50vh] md:h-[60vh] mt-8 cursor-pointer group"
+        className="relative z-20 flex justify-center items-center h-[40vh] md:h-[60vh] mt-4 md:mt-8 cursor-pointer group"
         onClick={() => fileInputRef.current?.click()}
       >
         <input 

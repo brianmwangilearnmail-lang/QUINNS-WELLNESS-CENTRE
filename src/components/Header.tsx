@@ -1,6 +1,7 @@
-import React from 'react';
-import { Search, ShoppingCart, Menu } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, ShoppingCart, Menu, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface HeaderProps {
   onPageChange: (page: 'home' | 'about' | 'contact' | 'science' | 'privacy') => void;
@@ -10,6 +11,17 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCartToggle }) => {
   const { totalItems } = useCart();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleMobileNav = (page: 'home' | 'about' | 'contact' | 'science' | 'privacy') => {
+    setIsMobileMenuOpen(false);
+    onPageChange(page);
+    if (page === 'home') {
+      setTimeout(() => document.getElementById('shop-section')?.scrollIntoView({ behavior: 'smooth' }), 300);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <header className="relative z-50 bg-white shadow-md sticky top-0">
@@ -81,12 +93,77 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
                  </span>
               )}
             </button>
-            <button className="text-gray-900 hover:text-[#ff5e00]">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-900 hover:text-[#ff5e00]">
               <Menu className="w-8 h-8" />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] md:hidden"
+            />
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 left-0 h-screen w-[80%] max-w-[320px] bg-white z-[100] shadow-2xl flex flex-col md:hidden"
+            >
+              <div className="p-6 flex items-center justify-between border-b border-gray-100">
+                <span className="font-display font-black text-2xl text-[#ff5e00] tracking-tighter">
+                  ABA HEALTH
+                </span>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500 hover:text-black bg-gray-100 rounded-full">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="flex flex-col p-6 space-y-6 flex-grow overflow-y-auto">
+                <button 
+                  onClick={() => handleMobileNav('home')} 
+                  className={`text-left font-black text-2xl tracking-tight transition-colors ${currentPage === 'home' ? 'text-[#ff5e00]' : 'text-gray-900'}`}
+                >
+                  SHOP PRODUCTS
+                </button>
+                <button 
+                  onClick={() => handleMobileNav('about')} 
+                  className={`text-left font-black text-2xl tracking-tight transition-colors ${currentPage === 'about' ? 'text-[#ff5e00]' : 'text-gray-900'}`}
+                >
+                  ABOUT US
+                </button>
+                <button 
+                  onClick={() => handleMobileNav('science')} 
+                  className={`text-left font-black text-2xl tracking-tight transition-colors ${currentPage === 'science' ? 'text-[#ff5e00]' : 'text-gray-900'}`}
+                >
+                  OUR SCIENCE
+                </button>
+                <button 
+                  onClick={() => handleMobileNav('contact')} 
+                  className={`text-left font-black text-2xl tracking-tight transition-colors ${currentPage === 'contact' ? 'text-[#ff5e00]' : 'text-gray-900'}`}
+                >
+                  CONTACT
+                </button>
+              </div>
+              <div className="p-6 border-t border-gray-100">
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); onCartToggle(); }}
+                  className="w-full bg-[#ff5e00] text-white py-4 rounded-xl font-black text-lg tracking-widest flex items-center justify-center gap-3"
+                >
+                  <ShoppingCart className="w-6 h-6" /> VIEW CART ({totalItems})
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   );
 };
