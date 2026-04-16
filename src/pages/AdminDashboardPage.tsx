@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { LayoutDashboard, Plus, Trash2, Edit2, LogOut, Package, Image as ImageIcon, Layout, Save, X, Check, Upload, CloudUpload, BarChart3 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { LayoutDashboard, Plus, Trash2, Edit2, LogOut, Package, Image as ImageIcon, Layout, Save, X, Check, Upload, CloudUpload, BarChart3, MessageSquare, Download, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSite, Product } from '../context/SiteContext';
 import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
+import { supabase } from '../lib/supabase';
 
 interface AdminDashboardPageProps {
   onLogout: () => void;
@@ -10,7 +11,7 @@ interface AdminDashboardPageProps {
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => {
   const { products, hero, updateHero, updateProduct, addProduct, deleteProduct } = useSite();
-  const [activeTab, setActiveTab] = useState<'hero' | 'products' | 'analytics'>('analytics');
+  const [activeTab, setActiveTab] = useState<'hero' | 'products' | 'analytics' | 'inquiries'>('analytics');
   
   // Hero form state
   const [heroForm, setHeroForm] = useState(hero);
@@ -21,6 +22,42 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const productFileInputRef = useRef<HTMLInputElement>(null);
+
+  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [loadingInquiries, setLoadingInquiries] = useState(false);
+  const [selectedInquiry, setSelectedInquiry] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'inquiries') {
+      fetchInquiries();
+    }
+  }, [activeTab]);
+
+  const fetchInquiries = async () => {
+    setLoadingInquiries(true);
+    const { data, error } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+    if (!error && data) setInquiries(data);
+    setLoadingInquiries(false);
+  };
+
+  const downloadCSV = () => {
+    if (inquiries.length === 0) return;
+    const headers = ['ID', 'Date', 'First Name', 'Last Name', 'Email', 'Subject', 'Message'];
+    const csvContent = [
+      headers.join(','),
+      ...inquiries.map(iq => {
+        const esc = (str: string) => `"${(str || '').replace(/"/g, '""')}"`;
+        return [iq.id, esc(new Date(iq.created_at).toLocaleDateString()), esc(iq.first_name), esc(iq.last_name), esc(iq.email), esc(iq.subject), esc(iq.message)].join(',');
+      })
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', 'Website_Inquiries.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleHeroSave = () => {
     updateHero(heroForm);
@@ -83,6 +120,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
     setEditingProduct({
       title: '',
       composition: '',
+      description: '',
       brand: 'Natural Factors',
       price: 0,
       image: '',
@@ -153,6 +191,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
               className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-4 font-black tracking-widest text-sm uppercase ${activeTab === 'hero' ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
             >
               <Layout className="w-5 h-5" /> Hero Section
+            </button>
+            <button 
+              onClick={() => setActiveTab('inquiries')}
+              className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-4 font-black tracking-widest text-sm uppercase ${activeTab === 'inquiries' ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
+            >
+              <MessageSquare className="w-5 h-5" /> Inquiries
             </button>
           </div>
 
@@ -258,7 +302,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                         </button>
                     </div>
                 </motion.div>
-              ) : (
+              ) : activeTab === 'products' ? (
                 <motion.div 
                   key="products-tab"
                   initial={{ opacity: 0, x: 20 }}
@@ -342,11 +386,149 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                         </div>
                     </div>
                 </motion.div>
-              )}
+              ) : activeTab === 'inquiries' ? (
+                <motion.div 
+                  key="inquiries-tab"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                    <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="flex items-center gap-4">
+                                <MessageSquare className="w-6 h-6 text-[#15803d]" />
+                                <h2 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter">Customer Inquiries</h2>
+                            </div>
+                            <button 
+                              onClick={downloadCSV}
+                              disabled={inquiries.length === 0}
+                              className="px-6 py-2 bg-[#14532d] hover:bg-[#114022] disabled:bg-gray-300 text-white rounded-xl font-black text-xs tracking-widest flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                            >
+                                <Download className="w-4 h-4" /> DOWNLOAD CSV
+                            </button>
+                        </div>
+
+                        <div className="overflow-x-auto text-left">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-gray-100">
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Date</th>
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Customer</th>
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Subject</th>
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {loadingInquiries ? (
+                                        <tr><td colSpan={4} className="py-8 text-center text-gray-500 font-medium">Loading inquiries...</td></tr>
+                                    ) : inquiries.length === 0 ? (
+                                        <tr><td colSpan={4} className="py-8 text-center text-gray-500 font-medium">No inquiries received yet.</td></tr>
+                                    ) : (
+                                        inquiries.map((iq) => (
+                                            <tr 
+                                                key={iq.id} 
+                                                className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer group"
+                                                onClick={() => setSelectedInquiry(iq)}
+                                            >
+                                                <td className="py-4 px-4 text-xs font-bold text-gray-500 whitespace-nowrap group-hover:text-[#15803d] transition-colors">
+                                                    {new Date(iq.created_at).toLocaleDateString()}
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <p className="text-gray-900 font-bold text-sm">{iq.first_name} {iq.last_name}</p>
+                                                    <a href={`mailto:${iq.email}`} className="text-[#15803d] hover:underline text-xs">{iq.email}</a>
+                                                </td>
+                                                <td className="py-4 px-4 text-gray-900 font-bold text-sm uppercase tracking-tighter">
+                                                    {iq.subject}
+                                                </td>
+                                                <td className="py-4 px-4 text-gray-600 text-sm max-w-xs truncate" title={iq.message}>
+                                                    {iq.message}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </motion.div>
+              ) : null}
             </AnimatePresence>
           </div>
         </div>
       </div>
+
+      {/* Inquiry Detail Modal */}
+      <AnimatePresence>
+        {selectedInquiry && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedInquiry(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-2xl bg-white border border-gray-200 rounded-[2.5rem] p-8 md:p-12 shadow-2xl z-10"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-[#15803d] rounded-xl flex items-center justify-center text-white">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <h2 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter">
+                    Inquiry Details
+                  </h2>
+                </div>
+                <button onClick={() => setSelectedInquiry(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-900 transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6 text-left">
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Customer</p>
+                        <p className="font-bold text-gray-900">{selectedInquiry.first_name} {selectedInquiry.last_name}</p>
+                        <p className="text-sm text-[#14532d]">{selectedInquiry.email}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Date Submitted</p>
+                        <p className="font-bold text-gray-900">{new Date(selectedInquiry.created_at).toLocaleString()}</p>
+                    </div>
+                </div>
+
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Subject</p>
+                    <p className="font-black text-xl text-gray-900 uppercase tracking-tight">{selectedInquiry.subject}</p>
+                </div>
+
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Message</p>
+                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 text-gray-700 leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar">
+                        {selectedInquiry.message}
+                    </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-100 flex gap-4">
+                  <a 
+                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(selectedInquiry.email)}&su=${encodeURIComponent(`Re: ${selectedInquiry.subject}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 bg-[#15803d] hover:bg-[#114022] text-white py-4 rounded-xl font-black text-sm tracking-widest transition-all hover:shadow-[0_10px_30px_rgba(21,128,61,0.4)] flex items-center justify-center gap-3 active:scale-95 text-center"
+                  >
+                    <Mail className="w-5 h-5" /> REPLY VIA GMAIL
+                  </a>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Product Edit/Add Modal */}
       <AnimatePresence>
@@ -452,16 +634,29 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2 text-left">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Composition / Description</label>
-                            <textarea 
-                                rows={3}
-                                required
-                                value={editingProduct?.composition || ''}
-                                onChange={(e) => setEditingProduct({...editingProduct!, composition: e.target.value})}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors resize-none text-sm" 
-                                placeholder="e.g. Contains high potency EPA/DHA..."
-                            />
+                        <div className="space-y-4 text-left">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Composition</label>
+                                <textarea 
+                                    rows={2}
+                                    required
+                                    value={editingProduct?.composition || ''}
+                                    onChange={(e) => setEditingProduct({...editingProduct!, composition: e.target.value})}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors resize-none text-sm" 
+                                    placeholder="e.g. 10 Strains for Optimal Gut Flora"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Description</label>
+                                <textarea 
+                                    rows={3}
+                                    required
+                                    value={editingProduct?.description || ''}
+                                    onChange={(e) => setEditingProduct({...editingProduct!, description: e.target.value})}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors resize-none text-sm" 
+                                    placeholder="e.g. A premium health supplement designed for..."
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -5,6 +5,7 @@ export interface Product {
     id: number;
     title: string;
     composition: string;
+    description: string;
     brand: string;
     price: number;
     image?: string;
@@ -75,11 +76,20 @@ const INITIAL_HERO: HeroContent = {
 };
 
 export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [hero, setHero] = useState<HeroContent>(INITIAL_HERO);
+    const [products, setProducts] = useState<Product[]>(() => {
+        const saved = localStorage.getItem('aba_products');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [hero, setHero] = useState<HeroContent>(() => {
+        const saved = localStorage.getItem('aba_hero');
+        return saved ? JSON.parse(saved) : INITIAL_HERO;
+    });
     const [orders, setOrders] = useState<Order[]>([]);
     const [inventoryBatches, setInventoryBatches] = useState<InventoryBatch[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState<boolean>(() => {
+        const hasCachedProducts = !!localStorage.getItem('aba_products');
+        return !hasCachedProducts; // Only show loading if we don't have a cache
+    });
 
     // Initial Fetch
     useEffect(() => {
@@ -101,9 +111,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const fetchData = async () => {
-        setLoading(true);
-        await Promise.all([fetchProducts(), fetchHero(), fetchOrders(), fetchInventoryBatches()]);
-        setLoading(false);
+        // Parallel fetch for crucial user-facing data to update cache behind the scenes
+        await Promise.all([fetchProducts(), fetchHero()]);
+        
+        setLoading(false); // Unblock UI if it wasn't unblocked already
+
+        // Fetch non-critical admin data in the background silently
+        fetchOrders();
+        fetchInventoryBatches();
     };
 
     const fetchOrders = async () => {
@@ -142,12 +157,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 id: p.id,
                 title: p.title,
                 composition: p.composition,
+                description: p.description || '',
                 brand: p.brand,
                 price: parseFloat(p.price),
                 image: p.image,
                 inStock: p.in_stock
             }));
             setProducts(mapped);
+            localStorage.setItem('aba_products', JSON.stringify(mapped));
         }
     };
 
@@ -163,12 +180,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
              const saved = localStorage.getItem('aba_hero');
              if (saved) setHero(JSON.parse(saved));
         } else if (data) {
-            setHero({
+            const newHero = {
                 titleTop: data.title_top,
                 titleBottom: data.title_bottom,
                 subtitle: data.subtitle,
                 mainImage: data.main_image
-            });
+            };
+            setHero(newHero);
+            localStorage.setItem('aba_hero', JSON.stringify(newHero));
         }
     };
 
@@ -201,6 +220,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (updates.title !== undefined) dbUpdates.title = updates.title;
         if (updates.brand !== undefined) dbUpdates.brand = updates.brand;
         if (updates.composition !== undefined) dbUpdates.composition = updates.composition;
+        if (updates.description !== undefined) dbUpdates.description = updates.description;
         if (updates.price !== undefined) dbUpdates.price = updates.price;
         if (updates.image !== undefined) dbUpdates.image = updates.image;
         if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock;
@@ -223,6 +243,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 title: p.title,
                 brand: p.brand,
                 composition: p.composition,
+                description: p.description,
                 price: p.price,
                 image: p.image,
                 in_stock: p.inStock

@@ -10,6 +10,7 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { motion, AnimatePresence } from 'motion/react';
 import { SiteProvider } from './context/SiteContext';
 import { CartProvider } from './context/CartContext';
+import { WhatsAppButton } from './components/WhatsAppButton';
 
 export type Page = 'home' | 'about' | 'contact' | 'science' | 'privacy' | 'admin-login' | 'admin-dashboard' | 'admin';
 
@@ -116,6 +117,11 @@ function MainApp() {
       )}
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      
+      {/* Global WhatsApp Hover Button */}
+      {currentPage !== 'admin-dashboard' && currentPage !== 'admin-login' && (
+        <WhatsAppButton />
+      )}
     </div>
   );
 }

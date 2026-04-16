@@ -47,11 +47,9 @@ export const AnalyticsDashboard: React.FC = () => {
       </div>
 
       {/* Operation Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <MetricCard metric={analytics.operations.totalRevenue} icon={<DollarSign className="w-5 h-5" />} onClick={() => setActiveDetail('Net Revenue')} />
         <MetricCard metric={analytics.operations.orderVolume} icon={<ShoppingBag className="w-5 h-5" />} onClick={() => setActiveDetail('Order Volume')} />
-        <MetricCard metric={analytics.operations.daysOnHand} icon={<Calendar className="w-5 h-5" />} onClick={() => setActiveDetail('Inventory Health')} />
-        <MetricCard metric={analytics.operations.refundRate} icon={<AlertTriangle className="w-5 h-5" />} onClick={() => setActiveDetail('Refunds')} />
       </div>
 
       {/* Top SKUs & Inventory Tracking */}

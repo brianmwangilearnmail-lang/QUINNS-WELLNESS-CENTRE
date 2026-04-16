@@ -89,3 +89,18 @@ VALUES
 
 -- Enable Row Level Security (RLS) - Optional but recommended
 -- For now, keep it simple for testing or add policies if needed.
+
+-- Contact Messages Table
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id BIGSERIAL PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Schema Migration: Separate Composition and Description
+-- Run this in your Supabase SQL editor to update existing tables without losing data!
+ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
