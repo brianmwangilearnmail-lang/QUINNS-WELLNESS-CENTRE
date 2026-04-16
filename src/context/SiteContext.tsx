@@ -87,8 +87,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [orders, setOrders] = useState<Order[]>([]);
     const [inventoryBatches, setInventoryBatches] = useState<InventoryBatch[]>([]);
     const [loading, setLoading] = useState<boolean>(() => {
-        const hasCachedProducts = !!localStorage.getItem('aba_products');
-        return !hasCachedProducts; // Only show loading if we don't have a cache
+        // Never block if we have any cached data — show it instantly
+        const hasCached = !!localStorage.getItem('aba_products');
+        return !hasCached;
     });
 
     // Initial Fetch
@@ -111,12 +112,16 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const fetchData = async () => {
-        // Parallel fetch for crucial user-facing data to update cache behind the scenes
-        await Promise.all([fetchProducts(), fetchHero()]);
-        
-        setLoading(false); // Unblock UI if it wasn't unblocked already
+        // Show cached data immediately — don't wait for Supabase
+        const cachedProducts = localStorage.getItem('aba_products');
+        const cachedHero = localStorage.getItem('aba_hero');
+        if (cachedProducts) setProducts(JSON.parse(cachedProducts));
+        if (cachedHero) setHero(JSON.parse(cachedHero));
+        setLoading(false); // Unblock UI right away using cache
 
-        // Fetch non-critical admin data in the background silently
+        // Then silently refresh everything from Supabase in the background
+        fetchProducts();
+        fetchHero();
         fetchOrders();
         fetchInventoryBatches();
     };

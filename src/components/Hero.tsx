@@ -9,10 +9,13 @@ export const Hero: React.FC = () => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      updateHero({ mainImage: url });
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      updateHero({ mainImage: base64 });
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
