@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Package, ChevronDown, ChevronUp, Share2, Heart, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { ShoppingCart, Package, Share2, Heart, RefreshCw, X, Plus, Minus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { Product } from '../context/SiteContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,8 +13,14 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'default' }) => {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [showDetails, setShowDetails] = useState(false);
+  const [modalQuantity, setModalQuantity] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = isModalOpen ? 'hidden' : 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isModalOpen]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -22,102 +29,142 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
     setTimeout(() => setAdded(false), 1500);
   };
 
+  const handleModalAddToCart = () => {
+    addToCart(product, modalQuantity);
+    setModalQuantity(1);
+    setIsModalOpen(false);
+  };
+
   const descriptionPreview = product.description
-    ? product.description.slice(0, 70) + (product.description.length > 70 ? '...' : '')
+    ? product.description.slice(0, 72) + (product.description.length > 72 ? '...' : '')
     : product.composition
-    ? product.composition.slice(0, 70) + (product.composition.length > 70 ? '...' : '')
+    ? product.composition.slice(0, 72) + (product.composition.length > 72 ? '...' : '')
     : 'A premium health and wellness supplement.';
 
-  if (variant === 'new-arrival') {
-    return (
-      <div className="min-w-[260px] w-[260px] bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
-        {/* Image */}
-        <div className="relative bg-gray-50 aspect-square flex items-center justify-center p-6">
-          <div className="absolute top-3 right-3 flex flex-col gap-2">
-            <button className="w-8 h-8 rounded-full bg-white shadow border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors">
-              <Heart className="w-4 h-4" />
-            </button>
-            <button className="w-8 h-8 rounded-full bg-white shadow border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-400 transition-colors">
-              <Share2 className="w-4 h-4" />
-            </button>
-          </div>
-          {product.image ? (
-            <img src={product.image} alt={product.title} className="w-full h-full object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
-          ) : (
-            <div className="flex flex-col items-center text-gray-300">
-              <Package className="w-12 h-12 mb-2" />
-              <span className="text-[10px] uppercase font-bold tracking-wider">No Visual</span>
-            </div>
-          )}
-        </div>
+  // ─── POPUP MODAL ───────────────────────────────────────────────
+  const modal = createPortal(
+    <AnimatePresence>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8">
+          {/* Backdrop */}
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsModalOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
 
-        {/* Content */}
-        <div className="p-4 flex flex-col gap-3 flex-grow">
-          <div>
-            <h3 className="font-bold text-gray-900 text-base leading-tight">{product.title}</h3>
-            <p className="text-gray-500 text-sm mt-1 line-clamp-2 leading-relaxed">{descriptionPreview}</p>
-            <p className="text-red-500 font-black text-lg mt-2">Ksh.{product.price.toLocaleString()}.00</p>
-          </div>
-
-          <div className="flex gap-2 mt-auto">
+          {/* Modal */}
+          <motion.div
+            key="modal"
+            initial={{ opacity: 0, scale: 0.95, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 24 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            onClick={e => e.stopPropagation()}
+            className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]"
+          >
+            {/* Close */}
             <button
-              onClick={handleAddToCart}
-              className="flex-1 bg-[#15803d] hover:bg-[#14532d] text-white py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm"
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
             >
-              <ShoppingCart className="w-4 h-4" />
-              {added ? 'Added!' : 'Add'}
+              <X className="w-5 h-5 text-gray-600" />
             </button>
-            <button
-              onClick={() => setShowDetails(v => !v)}
-              className="flex-1 border border-gray-200 text-gray-700 hover:border-[#15803d] hover:text-[#15803d] py-2.5 rounded-xl font-bold text-sm transition-all"
-            >
-              View Details
-            </button>
-          </div>
 
-          <AnimatePresence>
-            {showDetails && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="overflow-hidden"
-              >
-                <div className="pt-3 border-t border-gray-100 space-y-3">
-                  {product.composition && (
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-[#14532d] mb-1">Composition</p>
-                      <p className="text-xs text-gray-700 font-semibold bg-[#14532d]/5 rounded-lg px-3 py-2">{product.composition}</p>
-                    </div>
-                  )}
-                  {product.description && (
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Description</p>
-                      <p className="text-xs text-gray-600 leading-relaxed">{product.description}</p>
-                    </div>
-                  )}
+            {/* Image */}
+            <div className="w-full md:w-5/12 bg-gray-50 flex items-center justify-center p-10">
+              {product.image ? (
+                <img src={product.image} alt={product.title} className="w-full h-full object-contain drop-shadow-2xl" />
+              ) : (
+                <div className="flex flex-col items-center text-gray-300">
+                  <Package className="w-16 h-16 mb-4" />
+                  <span className="text-sm uppercase font-bold tracking-wider">No Visual</span>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    );
-  }
+              )}
+            </div>
 
-  // Default card
-  return (
-    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+            {/* Details */}
+            <div className="w-full md:w-7/12 p-8 flex flex-col overflow-y-auto">
+              <span className="inline-block px-3 py-1 bg-[#15803d]/10 text-[#15803d] rounded-full text-[0.65rem] font-black uppercase tracking-widest w-max mb-4">
+                {product.brand}
+              </span>
+
+              <h2 className="font-display font-bold text-2xl md:text-3xl text-gray-900 leading-tight mb-5">
+                {product.title}
+              </h2>
+
+              <div className="space-y-4 mb-6 flex-grow">
+                {product.composition && (
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#14532d] mb-1.5">Composition</p>
+                    <p className="text-sm text-gray-800 font-semibold bg-[#14532d]/5 border border-[#14532d]/10 rounded-xl px-4 py-3">
+                      {product.composition}
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Description</p>
+                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                    {product.description || 'A premium health and wellness supplement designed to elevate your daily routine.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-5 mt-auto space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Price</p>
+                    <p className="text-red-500 font-black text-3xl">Ksh.{(product.price * modalQuantity).toLocaleString()}.00</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-gray-100 rounded-full p-1 border border-gray-200">
+                    <button
+                      onClick={() => setModalQuantity(q => Math.max(1, q - 1))}
+                      className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                    >
+                      <Minus className="w-4 h-4 text-gray-600" />
+                    </button>
+                    <span className="font-bold text-gray-900 w-6 text-center">{modalQuantity}</span>
+                    <button
+                      onClick={() => setModalQuantity(q => q + 1)}
+                      className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                    >
+                      <Plus className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleModalAddToCart}
+                  className="w-full bg-[#15803d] hover:bg-[#14532d] text-white py-4 rounded-2xl font-black text-sm tracking-widest transition-all hover:shadow-xl flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  ADD TO CART
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+
+  // ─── CARD (shared layout) ──────────────────────────────────────
+  const cardContent = (
+    <div className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${variant === 'new-arrival' ? 'min-w-[260px] w-[260px]' : ''}`}>
       {/* Image area */}
       <div className="relative bg-gray-50 aspect-square flex items-center justify-center p-6">
-        {/* Brand badge */}
-        <span className="absolute top-3 left-3 px-2 py-1 rounded-full text-[0.6rem] font-black uppercase bg-[#15803d] text-white">
-          {product.brand}
-        </span>
+        {variant === 'default' && (
+          <span className="absolute top-3 left-3 px-2 py-1 rounded-full text-[0.6rem] font-black uppercase bg-[#15803d] text-white z-10">
+            {product.brand}
+          </span>
+        )}
 
-        {/* Action icons */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2">
+        {/* Icons */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
           <button className="w-8 h-8 rounded-full bg-white shadow border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors">
             <Heart className="w-4 h-4" />
           </button>
@@ -151,16 +198,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
           <p className="text-red-500 font-black text-xl mt-2">Ksh.{product.price.toLocaleString()}.00</p>
         </div>
 
-        {/* Quantity selector */}
+        {/* Quantity row */}
         <div className="flex items-center gap-2">
           <button
-            onClick={(e) => { e.stopPropagation(); setQuantity(q => Math.max(1, q - 1)); }}
-            className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 text-sm font-bold transition-colors"
+            onClick={e => { e.stopPropagation(); setQuantity(q => Math.max(1, q - 1)); }}
+            className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition-colors"
           >−</button>
           <span className="text-sm font-bold text-gray-900 w-5 text-center">{quantity}</span>
           <button
-            onClick={(e) => { e.stopPropagation(); setQuantity(q => q + 1); }}
-            className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 text-sm font-bold transition-colors"
+            onClick={e => { e.stopPropagation(); setQuantity(q => q + 1); }}
+            className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition-colors"
           >+</button>
         </div>
 
@@ -174,44 +221,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
             {added ? 'Added!' : 'Add'}
           </button>
           <button
-            onClick={() => setShowDetails(v => !v)}
-            className="flex-1 border border-gray-200 text-gray-700 hover:border-[#15803d] hover:text-[#15803d] py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1"
+            onClick={() => { setModalQuantity(1); setIsModalOpen(true); }}
+            className="flex-1 border border-gray-200 text-gray-700 hover:border-[#15803d] hover:text-[#15803d] py-2.5 rounded-xl font-bold text-sm transition-all"
           >
             View Details
-            {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
         </div>
-
-        {/* Expandable Detail Section */}
-        <AnimatePresence>
-          {showDetails && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
-            >
-              <div className="pt-3 border-t border-gray-100 space-y-3">
-                {product.composition && (
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[#14532d] mb-1">Composition</p>
-                    <p className="text-xs text-gray-700 font-semibold bg-[#14532d]/5 rounded-lg px-3 py-2">{product.composition}</p>
-                  </div>
-                )}
-                {(product.description || !product.composition) && (
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Description</p>
-                    <p className="text-xs text-gray-600 leading-relaxed">
-                      {product.description || 'A premium health and wellness supplement designed to elevate your daily routine.'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {cardContent}
+      {modal}
+    </>
   );
 };
