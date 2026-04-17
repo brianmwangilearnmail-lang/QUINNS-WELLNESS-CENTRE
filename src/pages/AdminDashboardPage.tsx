@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LayoutDashboard, Plus, Trash2, Edit2, LogOut, Package, Image as ImageIcon, Layout, Save, X, Check, Upload, CloudUpload, BarChart3, MessageSquare, Download, Mail } from 'lucide-react';
+import { LayoutDashboard, Plus, Trash2, Edit2, LogOut, Package, Image as ImageIcon, Layout, Save, X, Check, Upload, CloudUpload, BarChart3, MessageSquare, Download, Mail, ShoppingBag, Clock, CheckCircle2, Truck, Settings, Loader2 } from 'lucide-react';
+import { getEmailSettings, connectGmail, clearEmailSettings, sendDispatchReceipt, EmailSettings } from '../lib/emailService';
 import { motion, AnimatePresence } from 'motion/react';
-import { useSite, Product } from '../context/SiteContext';
+import { useSite, Product, Order } from '../context/SiteContext';
 import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
 import { supabase } from '../lib/supabase';
 
@@ -10,8 +11,14 @@ interface AdminDashboardPageProps {
 }
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => {
-  const { products, hero, updateHero, updateProduct, addProduct, deleteProduct } = useSite();
-  const [activeTab, setActiveTab] = useState<'hero' | 'products' | 'analytics' | 'inquiries'>('analytics');
+  const { products, hero, orders, updateHero, updateProduct, addProduct, deleteProduct, updateOrderStatus } = useSite();
+  const [activeTab, setActiveTab] = useState<'hero' | 'products' | 'analytics' | 'inquiries' | 'orders' | 'settings'>('analytics');
+  
+  // Email Settings state
+  const [emailSettings, setEmailSettings] = useState<EmailSettings | null>(getEmailSettings());
+  const [clientIdInput, setClientIdInput] = useState(emailSettings?.clientId || '');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   // Hero form state
   const [heroForm, setHeroForm] = useState(hero);
@@ -26,6 +33,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loadingInquiries, setLoadingInquiries] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<any | null>(null);
+
+  // Order state
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (activeTab === 'inquiries') {
@@ -149,6 +159,40 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
     setEditingProduct(null);
   };
 
+  const handleConnectEmail = async () => {
+    if (!clientIdInput.trim()) {
+      alert('Please enter a Google Client ID first.');
+      return;
+    }
+    setIsConnecting(true);
+    try {
+      const settings = await connectGmail(clientIdInput.trim());
+      setEmailSettings(settings);
+      alert('Successfully connected to ' + settings.connectedEmail);
+    } catch (error: any) {
+      console.error('Connection failed:', error);
+      alert('Failed to connect Gmail: ' + error.message);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnectEmail = () => {
+    if (window.confirm('Are you sure you want to disconnect your Gmail account? Automated receipts will stop sending.')) {
+        clearEmailSettings();
+        setEmailSettings(null);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+        case 'pending': return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'dispatched': return 'bg-blue-100 text-blue-700 border-blue-200';
+        case 'completed': return 'bg-green-100 text-green-700 border-green-200';
+        default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative z-20">
       <div className="max-w-7xl mx-auto">
@@ -181,6 +225,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
               <BarChart3 className="w-5 h-5" /> Analytics
             </button>
             <button 
+              onClick={() => setActiveTab('orders')}
+              className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-4 font-black tracking-widest text-sm uppercase ${activeTab === 'orders' ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
+            >
+              <ShoppingBag className="w-5 h-5" /> Orders
+            </button>
+            <button 
               onClick={() => setActiveTab('products')}
               className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-4 font-black tracking-widest text-sm uppercase ${activeTab === 'products' ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
             >
@@ -198,6 +248,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
             >
               <MessageSquare className="w-5 h-5" /> Inquiries
             </button>
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-4 font-black tracking-widest text-sm uppercase ${activeTab === 'settings' ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
+            >
+              <Settings className="w-5 h-5" /> Settings
+            </button>
           </div>
 
           {/* Main Controls */}
@@ -212,6 +268,74 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                 >
                   <AnalyticsDashboard />
                 </motion.div>
+              ) : activeTab === 'orders' ? (
+                <motion.div 
+                   key="orders-tab"
+                   initial={{ opacity: 0, x: 20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: -20 }}
+                   className="space-y-6"
+                 >
+                    <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="flex items-center gap-4">
+                                <ShoppingBag className="w-6 h-6 text-[#15803d]" />
+                                <h2 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter">Order Management</h2>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto text-left">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-gray-100">
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Order ID</th>
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Customer</th>
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Date</th>
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Total</th>
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d]">Status</th>
+                                        <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-[#14532d] text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {orders.length === 0 ? (
+                                        <tr><td colSpan={6} className="py-8 text-center text-gray-500 font-medium">No orders found.</td></tr>
+                                    ) : (
+                                        orders.map((order) => (
+                                            <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
+                                                <td className="py-4 px-4 text-sm font-black text-gray-900">
+                                                    #{order.id.toString().slice(-6).toUpperCase()}
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <p className="text-gray-900 font-bold text-sm">{order.customer_name}</p>
+                                                    <p className="text-gray-400 text-[10px]">{order.customer_email}</p>
+                                                </td>
+                                                <td className="py-4 px-4 text-xs text-gray-500">
+                                                    {new Date(order.created_at).toLocaleDateString()}
+                                                </td>
+                                                <td className="py-4 px-4 text-gray-900 font-black text-sm">
+                                                    Ksh {order.total_amount.toLocaleString()}
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter border ${getStatusColor(order.status)}`}>
+                                                        {order.status}
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 px-4 text-right">
+                                                    <button 
+                                                        onClick={() => setSelectedOrder(order)}
+                                                        className="px-4 py-2 bg-gray-50 hover:bg-[#15803d] hover:text-white rounded-xl text-xs font-black tracking-widest transition-all border border-gray-200"
+                                                    >
+                                                        VIEW DETAILS
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                 </motion.div>
               ) : activeTab === 'hero' ? (
                 <motion.div 
                   key="hero-tab"
@@ -452,11 +576,258 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                         </div>
                     </div>
                 </motion.div>
+              ) : activeTab === 'settings' ? (
+                <motion.div 
+                  key="settings-tab"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                    <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl">
+                        <div className="flex items-center gap-4 mb-8">
+                            <Settings className="w-6 h-6 text-[#15803d]" />
+                            <h2 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter">System Settings</h2>
+                        </div>
+
+                        <div className="space-y-8">
+                            {/* Email Integration Section */}
+                            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-gray-100 shadow-sm">
+                                        <Mail className="w-5 h-5 text-[#15803d]" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 uppercase tracking-tight">Email Notifications</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Connect Gmail to send automated order receipts</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 max-w-2xl">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase tracking-widest text-[#14532d] ml-1">Google OAuth Client ID</label>
+                                        <input 
+                                            type="text" 
+                                            value={clientIdInput}
+                                            onChange={(e) => setClientIdInput(e.target.value)}
+                                            placeholder="Enter your Google Client ID here..."
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#14532d] transition-all" 
+                                        />
+                                        <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
+                                            This ID is required to use Google's secure login system. You can generate one in the <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-[#15803d] underline">Google Cloud Console</a>.
+                                        </p>
+                                    </div>
+
+                                    <div className="pt-4">
+                                        {emailSettings ? (
+                                            <div className="flex flex-col sm:flex-row items-center gap-4">
+                                                <div className="flex-grow flex items-center gap-3 bg-green-50 border border-green-100 rounded-xl px-4 py-3 w-full">
+                                                    <CheckCircle2 className="w-5 h-5 text-[#15803d]" />
+                                                    <div>
+                                                        <p className="text-xs font-black text-[#15803d] uppercase tracking-tighter">Connected Account</p>
+                                                        <p className="text-sm font-bold text-gray-900">{emailSettings.connectedEmail}</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={handleDisconnectEmail}
+                                                    className="px-6 py-4 bg-white hover:bg-red-50 text-red-500 border border-gray-200 hover:border-red-200 rounded-xl font-black text-xs tracking-widest transition-all whitespace-nowrap uppercase"
+                                                >
+                                                    Disconnect
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={handleConnectEmail}
+                                                disabled={isConnecting}
+                                                className="w-full sm:w-auto px-8 py-4 bg-[#15803d] hover:bg-[#114022] disabled:bg-gray-300 text-white rounded-xl font-black text-xs tracking-widest flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-green-900/10 uppercase"
+                                            >
+                                                {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                                                {isConnecting ? 'Connecting...' : 'Connect Gmail Account'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
               ) : null}
             </AnimatePresence>
           </div>
         </div>
       </div>
+
+      {/* Order Detail Modal */}
+      <AnimatePresence>
+        {selectedOrder && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setSelectedOrder(null)}
+               className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.9, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.9, y: 20 }}
+               className="relative w-full max-w-3xl bg-white border border-gray-200 rounded-[2.5rem] p-8 md:p-12 shadow-2xl z-10 max-h-[90vh] overflow-y-auto custom-scrollbar"
+            >
+                <div className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-[#15803d] rounded-xl flex items-center justify-center text-white">
+                            <ShoppingBag className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter">
+                                Order Details
+                            </h2>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">#{selectedOrder.id}</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-900 transition-colors">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8 mb-8">
+                    <div className="space-y-6">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#15803d] mb-2">Customer Info</p>
+                            <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 space-y-2">
+                                <p className="font-bold text-gray-900">{selectedOrder.customer_name}</p>
+                                <p className="text-sm text-gray-600">{selectedOrder.customer_email}</p>
+                                <div className="pt-2">
+                                     <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter border ${getStatusColor(selectedOrder.status)}`}>
+                                        Order {selectedOrder.status}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#15803d] mb-2">Order Timeline</p>
+                            <div className="space-y-4 ml-2">
+                                <div className="flex gap-4 relative">
+                                    <div className="absolute left-[11px] top-6 bottom-0 w-px bg-gray-100" />
+                                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white z-10 relative">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-900">Order Placed</p>
+                                        <p className="text-[10px] text-gray-400">{new Date(selectedOrder.created_at).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                {selectedOrder.status !== 'pending' && (
+                                    <div className="flex gap-4 relative">
+                                        {selectedOrder.status === 'completed' && <div className="absolute left-[11px] top-6 bottom-0 w-px bg-gray-100" />}
+                                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white z-10 relative">
+                                            <Truck className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-gray-900">Dispatched</p>
+                                            <p className="text-[10px] text-gray-400">Handed to carrier</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {selectedOrder.status === 'completed' && (
+                                    <div className="flex gap-4">
+                                        <div className="w-6 h-6 rounded-full bg-[#15803d] flex items-center justify-center text-white z-10 relative">
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-gray-900">Order Completed</p>
+                                            <p className="text-[10px] text-gray-400">Delivered successfully</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#15803d] mb-2">Order Items</p>
+                        <div className="bg-gray-50 rounded-3xl border border-gray-100 overflow-hidden">
+                            <div className="p-6 space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                {selectedOrder.order_items?.map((item, idx) => (
+                                    <div key={idx} className="flex gap-4 items-center">
+                                        <div className="w-12 h-12 bg-white rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden">
+                                            {item.products?.image ? (
+                                                <img src={item.products.image} className="w-full h-full object-contain p-1" alt={item.products.title} />
+                                            ) : (
+                                                <Package className="w-6 h-6 text-gray-100" />
+                                            )}
+                                        </div>
+                                        <div className="flex-grow">
+                                            <p className="text-xs font-bold text-gray-900 leading-tight">{item.products?.title || 'Unknown Product'}</p>
+                                            <p className="text-[10px] text-gray-400">{item.quantity} x Ksh {item.price_at_sale.toLocaleString()}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-black text-gray-900">Ksh {(item.quantity * item.price_at_sale).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="bg-white p-6 border-t border-gray-100 flex justify-between items-center">
+                                <span className="font-display font-black text-sm uppercase tracking-widest text-gray-400">Grand Total</span>
+                                <span className="font-display font-black text-2xl text-[#15803d]">Ksh {selectedOrder.total_amount.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pt-8 border-t border-gray-100 flex flex-wrap gap-4">
+                    {selectedOrder.status === 'pending' && (
+                        <button 
+                            disabled={isSendingEmail}
+                            onClick={async () => { 
+                                setIsSendingEmail(true);
+                                try {
+                                    await updateOrderStatus(selectedOrder.id, 'dispatched');
+                                    
+                                    if (emailSettings) {
+                                        try {
+                                            await sendDispatchReceipt(emailSettings, selectedOrder);
+                                            console.log('Dispatch email sent successfully');
+                                        } catch (err) {
+                                            console.error('Failed to send dispatch email:', err);
+                                            alert('Order status updated, but receipt email failed to send. Please check your Gmail connection in Settings.');
+                                        }
+                                    }
+                                    
+                                    setSelectedOrder(null);
+                                } catch (error) {
+                                    console.error('Failed to dispatch order:', error);
+                                } finally {
+                                    setIsSendingEmail(false);
+                                }
+                            }}
+                            className="flex-1 min-w-[200px] bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-4 rounded-2xl font-black text-sm tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+                        >
+                            {isSendingEmail ? <Loader2 className="w-5 h-5 animate-spin" /> : <Truck className="w-5 h-5" />} 
+                            {isSendingEmail ? 'SENDING RECEIPT...' : 'DISPATCH ORDER'}
+                        </button>
+                    )}
+                    {selectedOrder.status === 'dispatched' && (
+                        <button 
+                            onClick={() => { updateOrderStatus(selectedOrder.id, 'completed'); setSelectedOrder(null); }}
+                            className="flex-1 min-w-[200px] bg-[#15803d] hover:bg-[#114022] text-white py-4 rounded-2xl font-black text-sm tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+                        >
+                            <CheckCircle2 className="w-5 h-5" /> MARK AS COMPLETED
+                        </button>
+                    )}
+                    <button 
+                        onClick={() => setSelectedOrder(null)}
+                        className="px-8 py-4 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-2xl font-black text-sm tracking-widest transition-all border border-gray-200"
+                    >
+                        CLOSE
+                    </button>
+                </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Inquiry Detail Modal */}
       <AnimatePresence>

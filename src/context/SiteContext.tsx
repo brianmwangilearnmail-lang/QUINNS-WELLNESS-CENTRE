@@ -12,12 +12,23 @@ export interface Product {
     inStock: boolean;
 }
 
+export interface OrderItem {
+    id: number;
+    order_id: number;
+    product_id: number;
+    quantity: number;
+    price_at_sale: number;
+    products?: Product; // For joining
+}
+
 export interface Order {
     id: number;
     customer_name: string;
+    customer_email: string;
     total_amount: number;
-    status: string;
+    status: 'pending' | 'dispatched' | 'completed' | 'refunded';
     created_at: string;
+    order_items?: OrderItem[];
 }
 
 export interface InventoryBatch {
@@ -64,6 +75,8 @@ interface SiteContextType {
     addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
     deleteProduct: (id: number) => Promise<void>;
     updateHero: (updates: Partial<HeroContent>) => Promise<void>;
+    createOrder: (order: Omit<Order, 'id' | 'created_at'>, items: Array<{ product_id: number, quantity: number, price_at_sale: number }>) => Promise<{ success: boolean; error?: string }>;
+    updateOrderStatus: (orderId: number, status: Order['status']) => Promise<void>;
 }
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
@@ -127,9 +140,18 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const fetchOrders = async () => {
-        const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-        if (error) console.error('Error fetching orders:', error);
-        else if (data) setOrders(data);
+        console.log('[SiteContext] Fetching orders from Supabase...');
+        const { data, error } = await supabase
+            .from('orders')
+            .select('*, order_items(*, products(*))')
+            .order('created_at', { ascending: false });
+            
+        if (error) {
+            console.error('[SiteContext] Error fetching orders:', error);
+        } else {
+            console.log('[SiteContext] Orders fetched successfully:', data?.length || 0, 'orders found');
+            if (data) setOrders(data);
+        }
     };
 
     const fetchInventoryBatches = async () => {
@@ -291,6 +313,71 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const createOrder = async (order: Omit<Order, 'id' | 'created_at'>, items: Array<{ product_id: number, quantity: number, price_at_sale: number }>) => {
+        try {
+            console.log('[SiteContext] createOrder called with:', { order, itemsCount: items.length });
+            
+            const { data, error } = await supabase
+                .from('orders')
+                .insert([{
+                    customer_name: order.customer_name,
+                    customer_email: order.customer_email,
+                    total_amount: order.total_amount,
+                    status: 'pending'
+                }])
+                .select();
+
+            if (error) {
+                console.error('[SiteContext] Supabase: Orders insert error:', error);
+                throw error;
+            }
+            if (!data || data.length === 0) {
+                console.error('[SiteContext] Supabase: No data returned after order insert');
+                throw new Error('No data returned from order creation');
+            }
+
+            const orderId = data[0].id;
+            console.log('[SiteContext] Order header created. ID:', orderId);
+
+            const orderItems = items.map(item => ({
+                order_id: orderId,
+                product_id: item.product_id,
+                quantity: item.quantity,
+                price_at_sale: item.price_at_sale
+            }));
+
+            console.log('[SiteContext] Inserting order items...', orderItems);
+            const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItems);
+
+            if (itemsError) {
+                console.error('[SiteContext] Supabase: Order items insert error:', itemsError);
+                throw itemsError;
+            }
+
+            console.log('[SiteContext] Order process complete. Re-fetching orders...');
+            await fetchOrders(); // Force immediate refresh
+            return { success: true };
+        } catch (error: any) {
+            console.error('[SiteContext] createOrder exception:', error);
+            return { success: false, error: error.message || 'Unknown database error' };
+        }
+    };
+
+    const updateOrderStatus = async (orderId: number, status: Order['status']) => {
+        const { error } = await supabase
+            .from('orders')
+            .update({ status })
+            .eq('id', orderId);
+
+        if (error) {
+            console.error('Error updating order status:', error);
+        } else {
+            fetchOrders(); // Refresh orders
+        }
+    };
+
     return (
         <SiteContext.Provider value={{ 
             products, 
@@ -302,7 +389,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             updateProduct, 
             addProduct, 
             deleteProduct, 
-            updateHero 
+            updateHero,
+            createOrder,
+            updateOrderStatus
         }}>
             {children}
         </SiteContext.Provider>
