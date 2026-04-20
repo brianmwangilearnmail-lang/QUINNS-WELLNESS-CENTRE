@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ShoppingCart, Package, Share2, Heart, RefreshCw, X, Plus, Minus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -16,6 +16,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
   const [modalQuantity, setModalQuantity] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [added, setAdded] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const handleImgLoad = useCallback(() => setImgLoaded(true), []);
+  const handleImgError = useCallback(() => setImgError(true), []);
 
   useEffect(() => {
     document.body.style.overflow = isModalOpen ? 'hidden' : 'unset';
@@ -176,12 +180,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
           </button>
         </div>
 
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={product.title}
-            className="w-full h-full object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500"
-          />
+        {product.image && !imgError ? (
+          <>
+            {!imgLoaded && (
+              <div className="absolute inset-6 rounded-xl bg-gradient-to-br from-[#14532d]/10 to-[#14532d]/5 animate-pulse" />
+            )}
+            <img
+              src={product.image}
+              alt={product.title}
+              loading="lazy"
+              onLoad={handleImgLoad}
+              onError={handleImgError}
+              className={`w-full h-full object-contain drop-shadow-xl hover:scale-105 transition-all duration-500 ${
+                imgLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          </>
         ) : (
           <div className="flex flex-col items-center text-gray-300">
             <Package className="w-12 h-12 mb-2" />

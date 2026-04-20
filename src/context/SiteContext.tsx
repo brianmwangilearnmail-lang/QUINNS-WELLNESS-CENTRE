@@ -97,11 +97,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     const [orders, setOrders] = useState<Order[]>([]);
     const [inventoryBatches, setInventoryBatches] = useState<InventoryBatch[]>([]);
-    const [loading, setLoading] = useState<boolean>(() => {
-        // Never block if we have any cached data — show it instantly
-        const hasCached = !!localStorage.getItem('aba_products');
-        return !hasCached;
-    });
+    const [loading, setLoading] = useState(false); // Always start false — cached data is shown instantly
 
     // Initial Fetch
     useEffect(() => {
@@ -123,16 +119,11 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchData = async () => {
         // Hero banners use localStorage as source of truth — load immediately
-        // Never wait for Supabase for hero: RLS may block the anon key from reading
         const cachedHero = localStorage.getItem('aba_hero_banners');
         if (cachedHero) {
             try {
                 const parsed = JSON.parse(cachedHero);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    setHero(parsed);
-                } else {
-                    setHero([]);
-                }
+                setHero(Array.isArray(parsed) && parsed.length > 0 ? parsed : []);
             } catch {
                 setHero([]);
             }
@@ -140,29 +131,25 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setHero([]);
         }
 
-        // Products and orders are fetched from Supabase as usual
+        // Show cached products immediately, then sync from Supabase in background
         const cachedProducts = localStorage.getItem('aba_products');
-        if (cachedProducts) setProducts(JSON.parse(cachedProducts));
+        if (cachedProducts) {
+            try { setProducts(JSON.parse(cachedProducts)); } catch {}
+        }
         setLoading(false);
 
+        // Background sync — don't await, don't block UI
         fetchProducts();
         fetchOrders();
         fetchInventoryBatches();
     };
 
     const fetchOrders = async () => {
-        console.log('[SiteContext] Fetching orders from Supabase...');
         const { data, error } = await supabase
             .from('orders')
             .select('*, order_items(*, products(*))')
             .order('created_at', { ascending: false });
-            
-        if (error) {
-            console.error('[SiteContext] Error fetching orders:', error);
-        } else {
-            console.log('[SiteContext] Orders fetched successfully:', data?.length || 0, 'orders found');
-            if (data) setOrders(data);
-        }
+        if (!error && data) setOrders(data);
     };
 
     const fetchInventoryBatches = async () => {
