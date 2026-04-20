@@ -26,6 +26,12 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 md:gap-8 w-full mx-auto">
+            {products.length === 0 && (
+              <div className="col-span-full py-12 flex flex-col items-center justify-center gap-4 animate-pulse">
+                <div className="w-12 h-12 border-4 border-[#15803d] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[#15803d] font-bold tracking-widest uppercase">Loading Products...</p>
+              </div>
+            )}
             {products.map((product) => (
               <ProductCard 
                 key={product.id}

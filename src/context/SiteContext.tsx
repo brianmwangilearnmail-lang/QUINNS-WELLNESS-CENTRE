@@ -80,6 +80,7 @@ interface SiteContextType {
     updateHero: (banners: HeroBanner[]) => Promise<void>;
     createOrder: (order: Omit<Order, 'id' | 'created_at'>, items: Array<{ product_id: number, quantity: number, price_at_sale: number }>) => Promise<{ success: boolean; error?: string }>;
     updateOrderStatus: (orderId: number, status: Order['status']) => Promise<void>;
+    initialLoading: boolean;
 }
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
@@ -106,17 +107,19 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     const [orders, setOrders] = useState<Order[]>([]);
     const [inventoryBatches, setInventoryBatches] = useState<InventoryBatch[]>([]);
-    const [loading, setLoading] = useState(false); // Always start false — cached data is shown instantly
+    const [loading, setLoading] = useState(false); // Legacy loading flag
+    const [initialLoading, setInitialLoading] = useState(true); // Tracks first true data fetch from Supabase
 
     // Initial Fetch
     useEffect(() => {
         fetchData();
         
-        // Listen for real-time changes (not hero — hero is localStorage-primary)
+        // Listen for real-time changes
         const channels = [
             supabase.channel('public:products').on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchProducts),
             supabase.channel('public:orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders),
             supabase.channel('public:inventory').on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches' }, fetchInventoryBatches),
+            supabase.channel('public:hero_banners').on('postgres_changes', { event: '*', schema: 'public', table: 'hero_banners' }, fetchHeroBanners),
         ];
 
         channels.forEach(ch => ch.subscribe());
@@ -158,7 +161,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Background sync — don't await, don't block UI
         fetchHeroBanners();
-        fetchProducts();
+        fetchProducts().finally(() => setInitialLoading(false));
         fetchOrders();
         fetchInventoryBatches();
     };
@@ -421,7 +424,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             analytics: calculateAnalytics(), 
             inventoryBatches, 
             orders,
-            loading, 
+            loading,
+            initialLoading, 
             updateProduct, 
             addProduct, 
             deleteProduct, 
