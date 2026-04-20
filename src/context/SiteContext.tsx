@@ -93,7 +93,16 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [hero, setHero] = useState<HeroBanner[]>(() => {
         const saved = localStorage.getItem('aba_hero_banners');
         if (!saved) return [];
-        try { return JSON.parse(saved); } catch { return []; }
+        try { 
+            const parsed = JSON.parse(saved);
+            if (!Array.isArray(parsed)) return [];
+            // FILTER: Permanently remove the Magnesium placeholder that was stuck in user's caches
+            const filtered = parsed.filter(b => 
+                !b.titleTop?.includes('Magnesium') && 
+                !b.image?.includes('placeholder')
+            );
+            return filtered;
+        } catch { return []; }
     });
     const [orders, setOrders] = useState<Order[]>([]);
     const [inventoryBatches, setInventoryBatches] = useState<InventoryBatch[]>([]);
@@ -119,16 +128,25 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchData = async () => {
         // Hero banners use localStorage as source of truth — load immediately
-        const cachedHero = localStorage.getItem('aba_hero_banners');
-        if (cachedHero) {
+        const savedHero = localStorage.getItem('aba_hero_banners');
+        if (savedHero) {
             try {
-                const parsed = JSON.parse(cachedHero);
-                setHero(Array.isArray(parsed) && parsed.length > 0 ? parsed : []);
+                const parsed = JSON.parse(savedHero);
+                if (Array.isArray(parsed)) {
+                    // Re-apply filter on fresh load to be safe
+                    const cleaned = parsed.filter(b => !b.titleTop?.includes('Magnesium'));
+                    if (cleaned.length > 0) {
+                        setHero(cleaned);
+                        if (cleaned.length !== parsed.length) {
+                             localStorage.setItem('aba_hero_banners', JSON.stringify(cleaned));
+                        }
+                    } else {
+                        setHero([]);
+                    }
+                }
             } catch {
                 setHero([]);
             }
-        } else {
-            setHero([]);
         }
 
         // Show cached products immediately, then sync from Supabase in background
@@ -146,22 +164,31 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const fetchHeroBanners = async () => {
-        const { data, error } = await supabase
-            .from('hero_banners')
-            .select('*')
-            .order('order_index', { ascending: true });
-            
-        if (!error && data) {
-            const mapped = data.map((b: any) => ({
-                id: b.id,
-                titleTop: b.title_top || '',
-                titleBottom: b.title_bottom || '',
-                subtitle: b.subtitle || '',
-                image: b.image,
-                link: b.link || ''
-            }));
-            setHero(mapped);
-            localStorage.setItem('aba_hero_banners', JSON.stringify(mapped));
+        try {
+            const { data, error } = await supabase
+                .from('hero_banners')
+                .select('*')
+                .order('order_index', { ascending: true });
+                
+            // IMPORTANT: Only update UI/Cache if we actually got banners back.
+            // This prevents RLS issues or an empty database from wiping out the site view.
+            if (!error && data && data.length > 0) {
+                const mapped = data.map((b: any) => ({
+                    id: b.id,
+                    titleTop: b.title_top || '',
+                    titleBottom: b.title_bottom || '',
+                    subtitle: b.subtitle || '',
+                    image: b.image,
+                    link: b.link || ''
+                }));
+                setHero(mapped);
+                localStorage.setItem('aba_hero_banners', JSON.stringify(mapped));
+                console.log('[SiteContext] Banners synced from database.');
+            } else if (error) {
+                console.warn('[SiteContext] Background banner sync failed:', error.message);
+            }
+        } catch (err) {
+            console.warn('[SiteContext] Error in fetchHeroBanners:', err);
         }
     };
 
