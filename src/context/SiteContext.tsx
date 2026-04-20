@@ -139,9 +139,30 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
 
         // Background sync — don't await, don't block UI
+        fetchHeroBanners();
         fetchProducts();
         fetchOrders();
         fetchInventoryBatches();
+    };
+
+    const fetchHeroBanners = async () => {
+        const { data, error } = await supabase
+            .from('hero_banners')
+            .select('*')
+            .order('order_index', { ascending: true });
+            
+        if (!error && data) {
+            const mapped = data.map((b: any) => ({
+                id: b.id,
+                titleTop: b.title_top || '',
+                titleBottom: b.title_bottom || '',
+                subtitle: b.subtitle || '',
+                image: b.image,
+                link: b.link || ''
+            }));
+            setHero(mapped);
+            localStorage.setItem('aba_hero_banners', JSON.stringify(mapped));
+        }
     };
 
     const fetchOrders = async () => {
@@ -193,10 +214,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    // fetchHero is intentionally removed from the public flow.
-    // Hero banners are localStorage-primary. Supabase is used as a background
-    // sync target only (write path). This avoids RLS blocking public reads.
-    // The admin saves banners → localStorage updated immediately → site shows them.
+    // Hero banners use localStorage for initial render to avoid blocking UI.
+    // Supabase is still fetched in the background (above) to keep it in sync.
+    // The admin saves banners → Supabase → localStorage updated immediately.
     const syncHeroToSupabase = async (banners: HeroBanner[]) => {
         try {
             await supabase.from('hero_banners').delete().neq('id', 0);
