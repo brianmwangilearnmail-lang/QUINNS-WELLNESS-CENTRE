@@ -173,23 +173,26 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .select('*')
                 .order('order_index', { ascending: true });
                 
-            // IMPORTANT: Only update UI/Cache if we actually got banners back.
-            // This prevents RLS issues or an empty database from wiping out the site view.
-            if (!error && data && data.length > 0) {
-                const mapped = data.map((b: any) => ({
-                    id: b.id,
-                    titleTop: b.title_top || '',
-                    titleBottom: b.title_bottom || '',
-                    subtitle: b.subtitle || '',
-                    image: b.image,
-                    link: b.link || ''
-                }));
-                setHero(mapped);
-                localStorage.setItem('aba_hero_banners', JSON.stringify(mapped));
-                console.log('[SiteContext] Banners synced from database.');
-            } else if (error) {
-                console.warn('[SiteContext] Background banner sync failed:', error.message);
+            if (error) {
+                console.warn('[SiteContext] Banner fetch error:', error.message);
+                return;
             }
+
+            // Supabase returned data (even if empty — empty means admin deleted all banners)
+            const mapped = (data || []).map((b: any) => ({
+                id: b.id,
+                titleTop: b.title_top || '',
+                titleBottom: b.title_bottom || '',
+                subtitle: b.subtitle || '',
+                image: b.image || '',
+                link: b.link || '',
+                order_index: b.order_index ?? 0
+            }));
+
+            setHero(mapped);
+            // Update cache with fresh Supabase data (overwrites any stale Magnesium placeholder)
+            localStorage.setItem('aba_hero_banners', JSON.stringify(mapped));
+            console.log('[SiteContext] Banners synced from Supabase:', mapped.length, 'banners.');
         } catch (err) {
             console.warn('[SiteContext] Error in fetchHeroBanners:', err);
         }
@@ -244,24 +247,49 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    // Hero banners use localStorage for initial render to avoid blocking UI.
-    // Supabase is still fetched in the background (above) to keep it in sync.
-    // The admin saves banners → Supabase → localStorage updated immediately.
+    // PRIMARY write path: Supabase is the single source of truth for cross-device sync.
+    // localStorage is kept as a fast-load cache only.
     const syncHeroToSupabase = async (banners: HeroBanner[]) => {
         try {
-            await supabase.from('hero_banners').delete().neq('id', 0);
+            // 1. Clear all existing banners
+            const { error: deleteError } = await supabase
+                .from('hero_banners')
+                .delete()
+                .gte('id', 0);
+
+            if (deleteError) {
+                console.error('[SiteContext] Failed to clear hero_banners:', deleteError.message);
+                return;
+            }
+
+            if (banners.length === 0) {
+                console.log('[SiteContext] All banners cleared.');
+                return;
+            }
+
+            // 2. Insert fresh banners with correct column names
             const toInsert = banners.map((b, idx) => ({
-                title_top: b.titleTop,
-                title_bottom: b.titleBottom,
-                subtitle: b.subtitle,
+                title_top: b.titleTop || '',
+                title_bottom: b.titleBottom || '',
+                subtitle: b.subtitle || '',
                 image: b.image,
-                link: b.link,
+                link: b.link || '',
                 order_index: idx
             }));
-            await supabase.from('hero_banners').insert(toInsert);
-            console.log('[SiteContext] Hero banners synced to Supabase.');
+
+            const { error: insertError } = await supabase
+                .from('hero_banners')
+                .insert(toInsert);
+
+            if (insertError) {
+                console.error('[SiteContext] Failed to insert hero_banners:', insertError.message);
+            } else {
+                console.log('[SiteContext] Hero banners saved to Supabase successfully.');
+                // Re-fetch to confirm write and update cache with DB-assigned IDs
+                fetchHeroBanners();
+            }
         } catch (err) {
-            console.warn('[SiteContext] Could not sync banners to Supabase (this is okay):', err);
+            console.error('[SiteContext] Error syncing banners to Supabase:', err);
         }
     };
 
@@ -343,13 +371,13 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const updateHero = async (banners: HeroBanner[]) => {
-        // PRIMARY: Save to localStorage immediately. This is instant and works regardless of Supabase RLS.
+        // Instant local update for snappy UI on the current device
         setHero(banners);
         localStorage.setItem('aba_hero_banners', JSON.stringify(banners));
-        console.log('[SiteContext] Hero banners saved to localStorage:', banners.length, 'banners');
+        console.log('[SiteContext] Hero banners saved locally:', banners.length, 'banners');
 
-        // SECONDARY: Try to sync to Supabase in the background (best effort)
-        syncHeroToSupabase(banners);
+        // Sync to Supabase so all other devices (Android, other PCs) get the update
+        await syncHeroToSupabase(banners);
     };
 
     const createOrder = async (order: Omit<Order, 'id' | 'created_at'>, items: Array<{ product_id: number, quantity: number, price_at_sale: number }>) => {
