@@ -44,9 +44,21 @@ export const Hero: React.FC = () => {
     };
   }, [hero?.length, isPaused, current]);
 
-  // Defensive: if no banners, show nothing (not a loading msg)
+  // Clean loading skeleton while banners haven't been set yet
   if (!hero || hero.length === 0) {
-    return <div className="w-full bg-gray-100 mt-16 md:mt-20" style={{ height: '56.25vw', maxHeight: '80vh' }} />;
+    return (
+      <div
+        className="w-full mt-16 md:mt-20 bg-gradient-to-r from-[#14532d]/10 via-[#14532d]/5 to-[#14532d]/10 animate-pulse flex items-center justify-center"
+        style={{ height: 'min(56.25vw, 80vh)', minHeight: '280px' }}
+      >
+        <div className="flex flex-col items-center gap-3 opacity-40">
+          <svg className="w-10 h-10 text-[#14532d]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 3h18M3 21h18" />
+          </svg>
+          <p className="text-[#14532d] text-xs font-bold uppercase tracking-widest">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   const currentBanner = hero[current];

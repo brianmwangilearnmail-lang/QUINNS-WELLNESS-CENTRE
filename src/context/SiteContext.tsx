@@ -84,14 +84,6 @@ interface SiteContextType {
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
-const INITIAL_HERO: HeroBanner[] = [{
-    id: 1,
-    titleTop: "BOOST YOUR",
-    titleBottom: "DAILY HEALTH",
-    subtitle: "Elevate your daily routine with our scientifically formulated, sustainably sourced supplements.",
-    image: "/images/magnesium.png",
-    order_index: 0
-}];
 
 export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [products, setProducts] = useState<Product[]>(() => {
@@ -100,7 +92,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     const [hero, setHero] = useState<HeroBanner[]>(() => {
         const saved = localStorage.getItem('aba_hero_banners');
-        return saved ? JSON.parse(saved) : INITIAL_HERO;
+        if (!saved) return [];
+        try { return JSON.parse(saved); } catch { return []; }
     });
     const [orders, setOrders] = useState<Order[]>([]);
     const [inventoryBatches, setInventoryBatches] = useState<InventoryBatch[]>([]);
@@ -138,15 +131,13 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     setHero(parsed);
                 } else {
-                    setHero(INITIAL_HERO);
+                    setHero([]);
                 }
             } catch {
-                setHero(INITIAL_HERO);
+                setHero([]);
             }
         } else {
-            // No cached banners at all — use default
-            setHero(INITIAL_HERO);
-            localStorage.setItem('aba_hero_banners', JSON.stringify(INITIAL_HERO));
+            setHero([]);
         }
 
         // Products and orders are fetched from Supabase as usual
