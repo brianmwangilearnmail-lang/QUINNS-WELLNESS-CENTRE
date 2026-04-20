@@ -201,7 +201,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchOrders = async () => {
         const { data, error } = await supabase
             .from('orders')
-            .select('*, order_items(*, products(*))')
+            .select('id,customer_name,customer_email,total_amount,status,created_at,order_items(id,order_id,product_id,quantity,price_at_sale,products(id,title,price,image))')
             .order('created_at', { ascending: false });
         if (!error && data) setOrders(data);
     };
@@ -224,7 +224,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchProducts = async () => {
         const { data, error } = await supabase
             .from('products')
-            .select('*')
+            // Only select fields actually used in the UI — reduces payload size
+            .select('id,title,brand,composition,description,price,image,in_stock,created_at')
             .order('created_at', { ascending: true });
 
         if (error) {
