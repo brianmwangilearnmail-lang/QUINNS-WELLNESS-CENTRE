@@ -240,6 +240,48 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         </div>
                       </div>
 
+                      {/* Payment Section */}
+                      <div className="p-4 bg-white rounded-2xl border border-gray-200 space-y-3">
+                        <div>
+                          <h3 className="text-sm font-black text-gray-900">Payment</h3>
+                          <p className="text-[11px] text-gray-400 font-medium">All transactions are secure and encrypted.</p>
+                        </div>
+
+                        {/* COD Option */}
+                        <div className="flex items-center gap-3 p-3 border-2 border-[#15803d] rounded-xl bg-[#15803d]/5">
+                          <div className="w-5 h-5 rounded-full bg-[#15803d] flex items-center justify-center flex-shrink-0">
+                            <div className="w-2 h-2 rounded-full bg-white" />
+                          </div>
+                          <span className="text-sm font-bold text-gray-900">Cash on Delivery (COD)</span>
+                        </div>
+
+                        {/* Policy Details */}
+                        <div className="space-y-2 text-[12px] text-gray-700 leading-relaxed pt-1">
+                          <p>
+                            We <span className="font-black">ONLY</span> accept <span className="font-black">Cash or M-pesa on delivery IF</span>:
+                          </p>
+
+                          <p>
+                            1. Within <span className="font-bold">Nairobi Metropolis</span>.
+                          </p>
+
+                          <p>
+                            2. Cash on Delivery also if you are picking your order <span className="font-bold">at our PickUp-Shop in Nairobi CBD</span>, at <span className="font-bold">Nyota building</span>, <span className="font-bold">Accra road</span>, 2nd floor, Room 201.
+                          </p>
+
+                          <p>
+                            If you are outside Nairobi CBD, you will as well kindly cater between (<span className="font-bold">Sh.100 – sh.400</span>) for delivery
+                          </p>
+
+                          <div className="pt-1 border-t border-gray-100 space-y-1">
+                            <p className="font-bold text-gray-500 uppercase text-[10px] tracking-widest">NB:</p>
+                            <p>
+                              1. We do <span className="font-black">FREE delivery</span> for orders worth <span className="font-black">ksh.3000 <em>and above</em></span>.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
                       {orderError && (
                         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-medium">
                           {orderError}

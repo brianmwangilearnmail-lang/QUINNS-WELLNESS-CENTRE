@@ -63,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
           </nav>
 
           {/* Icons & CTA */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-4">
             <button className="text-gray-900 hover:text-[#14532d] transition-colors p-2">
               <Search className="w-6 h-6" />
             </button>
@@ -75,6 +75,15 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
                 </span>
               )}
             </button>
+            {/* Free Consultation CTA */}
+            <a
+              href="https://wa.me/254726138466?text=Hi%20Quins%20Wellness%2C%20I%27d%20like%20a%20free%20health%20consultation."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border-2 border-[#14532d] text-[#14532d] hover:bg-[#14532d] hover:text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-wider transition-all hover:-translate-y-0.5 whitespace-nowrap"
+            >
+              Free Consultation
+            </a>
             <button 
               onClick={() => { onPageChange('home'); setTimeout(() => document.getElementById('shop-section')?.scrollIntoView({ behavior: 'smooth' }), 100); }}
               className="bg-[#14532d] hover:bg-[#114022] text-white px-8 py-3 rounded-full font-bold text-sm uppercase tracking-wider transition-all shadow-[0_4px_14px_0_rgba(20,83,45,0.39)] hover:shadow-[0_6px_20px_rgba(20,83,45,0.23)] hover:-translate-y-0.5"
@@ -152,7 +161,15 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
                   CONTACT
                 </button>
               </div>
-              <div className="p-6 border-t border-gray-100">
+              <div className="p-6 border-t border-gray-100 space-y-3">
+                <a
+                  href="https://wa.me/254726138466?text=Hi%20Quins%20Wellness%2C%20I%27d%20like%20a%20free%20health%20consultation."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full border-2 border-[#14532d] text-[#14532d] py-4 rounded-xl font-black text-sm tracking-widest flex items-center justify-center gap-2 uppercase"
+                >
+                  💬 Get Free Consultation
+                </a>
                 <button 
                   onClick={() => { setIsMobileMenuOpen(false); onCartToggle(); }}
                   className="w-full bg-[#14532d] text-white py-4 rounded-xl font-black text-lg tracking-widest flex items-center justify-center gap-3"

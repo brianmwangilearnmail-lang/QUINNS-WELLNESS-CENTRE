@@ -20,9 +20,70 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   
-  // Hero form state
-  const [heroForm, setHeroForm] = useState(hero);
-  const heroFileInputRef = useRef<HTMLInputElement>(null);
+  // Banner state
+  const [banners, setBanners] = useState<HeroBanner[]>(hero);
+  const bannerFileInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  
+  // Custom Notification state
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  
+  // Custom Confirm Modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+    cancelText?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  useEffect(() => {
+    if (hero) setBanners(hero);
+  }, [hero]);
+
+  const handleHeroSave = () => {
+    updateHero(banners);
+    setNotification({ message: 'Banners updated successfully!', type: 'success' });
+  };
+
+  const handleAddBanner = () => {
+    if (banners.length >= 5) {
+      setNotification({ message: 'Maximum 5 banners allowed.', type: 'error' });
+      return;
+    }
+    const newBanner: any = {
+      titleTop: 'BRAND NEW',
+      titleBottom: 'WELLNESS',
+      subtitle: 'Premium health solutions delivered to your doorstep.',
+      image: '',
+      order_index: banners.length
+    };
+    setBanners([...banners, newBanner]);
+  };
+
+  const handleRemoveBanner = (index: number) => {
+    setConfirmModal({
+      title: 'Remove Banner',
+      message: 'Are you sure you want to remove this banner? This action cannot be undone until you save.',
+      confirmText: 'REMOVE',
+      onConfirm: () => {
+        setBanners(banners.filter((_, i) => i !== index));
+        setConfirmModal(null);
+      }
+    });
+  };
+
+  const handleUpdateBanner = (index: number, updates: Partial<HeroBanner>) => {
+    const newBanners = [...banners];
+    newBanners[index] = { ...newBanners[index], ...updates };
+    setBanners(newBanners);
+  };
 
   // Product Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,10 +130,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
     document.body.removeChild(link);
   };
 
-  const handleHeroSave = () => {
-    updateHero(heroForm);
-    alert('Hero section updated successfully!');
-  };
+
 
   const handleToggleProductStatus = (id: number, currentStatus: boolean) => {
     updateProduct(id, { inStock: !currentStatus });
@@ -83,7 +141,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
+      setNotification({ message: 'Please select a valid image file.', type: 'error' });
       return;
     }
 
@@ -161,27 +219,34 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
 
   const handleConnectEmail = async () => {
     if (!clientIdInput.trim()) {
-      alert('Please enter a Google Client ID first.');
+      setNotification({ message: 'Please enter a Google Client ID first.', type: 'info' });
       return;
     }
     setIsConnecting(true);
     try {
       const settings = await connectGmail(clientIdInput.trim());
       setEmailSettings(settings);
-      alert('Successfully connected to ' + settings.connectedEmail);
+      setNotification({ message: `Successfully connected to ${settings.connectedEmail}`, type: 'success' });
     } catch (error: any) {
       console.error('Connection failed:', error);
-      alert('Failed to connect Gmail: ' + error.message);
+      setNotification({ message: `Failed to connect Gmail: ${error.message}`, type: 'error' });
     } finally {
       setIsConnecting(false);
     }
   };
 
   const handleDisconnectEmail = () => {
-    if (window.confirm('Are you sure you want to disconnect your Gmail account? Automated receipts will stop sending.')) {
+    setConfirmModal({
+      title: 'Disconnect Gmail',
+      message: 'Are you sure you want to disconnect your Gmail account? Automated receipts will stop sending to customers.',
+      confirmText: 'DISCONNECT',
+      onConfirm: () => {
         clearEmailSettings();
         setEmailSettings(null);
-    }
+        setConfirmModal(null);
+        setNotification({ message: 'Gmail disconnected successfully', type: 'info' });
+      }
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -195,6 +260,41 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative z-20">
+      {/* Notification Toast */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -50, x: '-50%' }}
+            className="fixed top-24 left-1/2 z-[200] min-w-[320px]"
+          >
+            <div className={`p-1 rounded-2xl shadow-2xl backdrop-blur-xl ${
+              notification.type === 'success' ? 'bg-green-500/20 border border-green-500/30' : 
+              notification.type === 'error' ? 'bg-red-500/20 border border-red-500/30' : 
+              'bg-[#15803d]/20 border border-[#15803d]/30'
+            }`}>
+              <div className="bg-white/90 rounded-xl px-6 py-4 flex items-center gap-4">
+                {notification.type === 'success' ? (
+                  <CheckCircle2 className="w-6 h-6 text-green-500" />
+                ) : notification.type === 'error' ? (
+                  <X className="w-6 h-6 text-red-500" />
+                ) : (
+                  <Mail className="w-6 h-6 text-[#15803d]" />
+                )}
+                <div className="flex-grow">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">System Notification</p>
+                  <p className="text-sm font-bold text-gray-900 leading-tight">{notification.message}</p>
+                </div>
+                <button onClick={() => setNotification(null)} className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white border border-gray-200 p-6 rounded-3xl shadow-xl">
@@ -342,88 +442,116 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl"
+                  className="space-y-6"
                 >
-                    <div className="flex items-center gap-4 mb-8">
-                        <Layout className="w-6 h-6 text-[#15803d]" />
-                        <h2 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter">Hero Section Settings</h2>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6 text-left">
-                            <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Main Heading (Top)</label>
-                                <input 
-                                    type="text" 
-                                    value={heroForm.titleTop}
-                                    onChange={(e) => setHeroForm({...heroForm, titleTop: e.target.value})}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors" 
-                                />
+                    <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="flex items-center gap-4">
+                                <Layout className="w-6 h-6 text-[#15803d]" />
+                                <h2 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter">Hero Banners ({banners.length}/5)</h2>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Main Heading (Bottom)</label>
-                                <input 
-                                    type="text" 
-                                    value={heroForm.titleBottom}
-                                    onChange={(e) => setHeroForm({...heroForm, titleBottom: e.target.value})}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors" 
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2 text-left">
-                            <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Hero Subtitle</label>
-                            <textarea 
-                                rows={3}
-                                value={heroForm.subtitle}
-                                onChange={(e) => setHeroForm({...heroForm, subtitle: e.target.value})}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors resize-none text-sm" 
-                            />
+                            <button 
+                                onClick={handleAddBanner}
+                                disabled={banners.length >= 5}
+                                className="px-6 py-2 bg-[#14532d] hover:bg-[#114022] disabled:bg-gray-300 text-white rounded-xl font-black text-xs tracking-widest flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                            >
+                                <Plus className="w-4 h-4" /> ADD BANNER
+                            </button>
                         </div>
 
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                                <ImageIcon className="w-5 h-5 text-[#14532d]" />
-                                <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">Visual Preview</h3>
-                            </div>
-                            <div className="flex items-center gap-8">
-                                <div className="w-32 h-40 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden group relative">
-                                     {heroForm.mainImage ? (
-                                        <img src={heroForm.mainImage} className="w-full h-full object-contain p-2" alt="Hero" />
-                                     ) : (
-                                        <ImageIcon className="w-10 h-10 text-white/10" />
-                                     )}
-                                     <div 
-                                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                                        onClick={() => heroFileInputRef.current?.click()}
-                                     >
-                                         <Upload className="w-8 h-8 text-[#15803d]" />
-                                     </div>
-                                </div>
-                                <div className="space-y-4 flex-grow text-left">
-                                    <p className="text-gray-400 text-xs">Recommended: High-resolution supplement photos with transparent backgrounds.</p>
-                                    <input 
-                                        type="file" 
-                                        ref={heroFileInputRef}
-                                        className="hidden" 
-                                        accept="image/*"
-                                        onChange={(e) => handleImageUpload(e, (base64) => setHeroForm({...heroForm, mainImage: base64}))}
-                                    />
+                        <div className="space-y-12">
+                            {banners.map((banner, index) => (
+                                <div key={banner.id || index} className="group relative bg-gray-50 border border-gray-100 rounded-[2rem] p-8 transition-all hover:border-[#15803d]/30">
                                     <button 
-                                      className="px-6 py-2 bg-[#15803d]/10 hover:bg-[#15803d]/20 text-[#15803d] rounded-lg text-sm font-black tracking-widest transition-all border border-[#15803d]/20"
-                                      onClick={() => heroFileInputRef.current?.click()}
+                                        onClick={() => handleRemoveBanner(index)}
+                                        className="absolute -top-3 -right-3 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-10"
                                     >
-                                        UPLOAD NEW IMAGE
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+
+                                    <div className="grid lg:grid-cols-3 gap-8">
+                                        {/* Image Section */}
+                                        <div className="lg:col-span-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Widescreen Banner Image (16:9 Required)</label>
+                                            <div 
+                                                className="aspect-video bg-white border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-[#15803d] transition-all overflow-hidden relative group/img"
+                                                onClick={() => bannerFileInputRefs.current[index]?.click()}
+                                            >
+                                                {banner.image ? (
+                                                    <>
+                                                        <img src={banner.image} className="w-full h-full object-cover" alt="Banner" />
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                                            <Upload className="w-10 h-10 text-white" />
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ImageIcon className="w-12 h-12 text-gray-200" />
+                                                        <div className="text-center">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase">Click to upload 16:9 Banner</p>
+                                                            <p className="text-[9px] text-gray-300 mt-1 uppercase">Recommended: 1920x1080px</p>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <input 
+                                                type="file" 
+                                                ref={el => bannerFileInputRefs.current[index] = el}
+                                                className="hidden" 
+                                                accept="image/*"
+                                                onChange={(e) => handleImageUpload(e, (base64) => handleUpdateBanner(index, { image: base64 }))}
+                                            />
+                                        </div>
+ 
+                                        {/* Settings Section */}
+                                        <div className="lg:col-span-1 space-y-6">
+                                            <div className="space-y-4">
+                                                <div className="p-4 bg-white rounded-2xl border border-gray-100">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Banner Status</p>
+                                                    <div className="flex items-center gap-2 text-green-600">
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                        <span className="text-[10px] font-bold uppercase">Ready to Display</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-[#15803d] ml-1">Click Destination (Link)</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={banner.link || ''}
+                                                        onChange={(e) => handleUpdateBanner(index, { link: e.target.value })}
+                                                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-[#15803d] transition-all font-bold" 
+                                                        placeholder="e.g. #shop-section"
+                                                    />
+                                                    <p className="text-[9px] text-gray-400 leading-tight px-1">Where should users go when they click this banner? Default is supplements section.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {banners.length === 0 && (
+                                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
+                                    <Layout className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                                    <p className="text-gray-400 font-bold uppercase tracking-widest">No banners added yet</p>
+                                    <button onClick={handleAddBanner} className="mt-4 text-[#15803d] font-black text-xs uppercase tracking-widest hover:underline">
+                                        Add your first banner
                                     </button>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
-                        <button 
-                          onClick={handleHeroSave}
-                          className="w-full bg-[#15803d] hover:bg-[#114022] text-white py-4 rounded-xl font-black text-lg tracking-widest transition-all hover:shadow-[0_10px_30px_rgba(21,128,61,0.4)] flex items-center justify-center gap-3 active:scale-95 shadow-xl"
-                        >
-                            <Save className="w-6 h-6" /> SAVE HERO CHANGES
-                        </button>
+                        {banners.length > 0 && (
+                            <div className="mt-12 pt-8 border-t border-gray-100">
+                                <button 
+                                    onClick={handleHeroSave}
+                                    className="w-full bg-[#15803d] hover:bg-[#114022] text-white py-4 rounded-xl font-black text-lg tracking-widest transition-all hover:shadow-[0_10px_30px_rgba(21,128,61,0.4)] flex items-center justify-center gap-3 active:scale-95 shadow-xl"
+                                >
+                                    <Save className="w-6 h-6" /> SAVE ALL BANNERS
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
               ) : activeTab === 'products' ? (
@@ -496,7 +624,18 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                                       <Edit2 className="w-4 h-4 text-gray-400 group-hover:text-gray-900" />
                                                     </button>
                                                     <button 
-                                                      onClick={() => { if(window.confirm('Delete this product?')) deleteProduct(product.id); }}
+                                                      onClick={() => { 
+                                                        setConfirmModal({
+                                                          title: 'Delete Product',
+                                                          message: `Are you sure you want to delete "${product.title}"?`,
+                                                          confirmText: 'DELETE',
+                                                          onConfirm: () => {
+                                                            deleteProduct(product.id);
+                                                            setConfirmModal(null);
+                                                            setNotification({ message: 'Product deleted successfully', type: 'success' });
+                                                          }
+                                                        });
+                                                      }}
                                                       className="p-2 hover:bg-red-50 hover:text-red-500 rounded-lg transition-all"
                                                     >
                                                         <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-500" />
@@ -792,7 +931,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                             console.log('Dispatch email sent successfully');
                                         } catch (err) {
                                             console.error('Failed to send dispatch email:', err);
-                                            alert('Order status updated, but receipt email failed to send. Please check your Gmail connection in Settings.');
+                                            setNotification({ 
+                                                message: 'Order updated, but receipt email failed to send. Check Gmail connection.', 
+                                                type: 'error' 
+                                            });
                                         }
                                     }
                                     
@@ -823,6 +965,53 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                     >
                         CLOSE
                     </button>
+                </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirm Modal */}
+      <AnimatePresence>
+        {confirmModal && (
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setConfirmModal(null)}
+               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.9, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.9, y: 20 }}
+               className="relative w-full max-w-md bg-white border border-gray-200 rounded-[2rem] p-8 shadow-2xl z-10"
+            >
+                <div className="text-center">
+                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6">
+                        <Trash2 className="w-8 h-8" />
+                    </div>
+                    <h3 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter mb-2">
+                        {confirmModal.title}
+                    </h3>
+                    <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                        {confirmModal.message}
+                    </p>
+                    <div className="flex gap-4">
+                        <button 
+                            onClick={() => setConfirmModal(null)}
+                            className="flex-1 px-6 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-xl font-black text-xs tracking-widest transition-all border border-gray-100"
+                        >
+                            {confirmModal.cancelText || 'CANCEL'}
+                        </button>
+                        <button 
+                            onClick={confirmModal.onConfirm}
+                            className="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-black text-xs tracking-widest transition-all shadow-lg shadow-red-500/20 uppercase"
+                        >
+                            {confirmModal.confirmText || 'CONFIRM'}
+                        </button>
+                    </div>
                 </div>
             </motion.div>
           </div>

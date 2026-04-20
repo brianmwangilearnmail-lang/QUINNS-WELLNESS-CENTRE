@@ -40,11 +40,14 @@ export interface InventoryBatch {
     status: 'good' | 'expiring' | 'expired';
 }
 
-export interface HeroContent {
+export interface HeroBanner {
+    id: number;
     titleTop: string;
     titleBottom: string;
     subtitle: string;
-    mainImage?: string;
+    image: string;
+    link?: string;
+    order_index: number;
 }
 
 export interface AnalyticsMetric {
@@ -66,7 +69,7 @@ export interface AnalyticsData {
 
 interface SiteContextType {
     products: Product[];
-    hero: HeroContent;
+    hero: HeroBanner[];
     analytics: AnalyticsData;
     inventoryBatches: InventoryBatch[];
     orders: Order[];
@@ -74,27 +77,29 @@ interface SiteContextType {
     updateProduct: (id: number, updates: Partial<Product>) => Promise<void>;
     addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
     deleteProduct: (id: number) => Promise<void>;
-    updateHero: (updates: Partial<HeroContent>) => Promise<void>;
+    updateHero: (banners: HeroBanner[]) => Promise<void>;
     createOrder: (order: Omit<Order, 'id' | 'created_at'>, items: Array<{ product_id: number, quantity: number, price_at_sale: number }>) => Promise<{ success: boolean; error?: string }>;
     updateOrderStatus: (orderId: number, status: Order['status']) => Promise<void>;
 }
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
-const INITIAL_HERO: HeroContent = {
+const INITIAL_HERO: HeroBanner[] = [{
+    id: 1,
     titleTop: "BOOST YOUR",
     titleBottom: "DAILY HEALTH",
     subtitle: "Elevate your daily routine with our scientifically formulated, sustainably sourced supplements.",
-    mainImage: "/images/magnesium.png",
-};
+    image: "/images/magnesium.png",
+    order_index: 0
+}];
 
 export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [products, setProducts] = useState<Product[]>(() => {
         const saved = localStorage.getItem('aba_products');
         return saved ? JSON.parse(saved) : [];
     });
-    const [hero, setHero] = useState<HeroContent>(() => {
-        const saved = localStorage.getItem('aba_hero');
+    const [hero, setHero] = useState<HeroBanner[]>(() => {
+        const saved = localStorage.getItem('aba_hero_banners');
         return saved ? JSON.parse(saved) : INITIAL_HERO;
     });
     const [orders, setOrders] = useState<Order[]>([]);
@@ -109,12 +114,11 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         fetchData();
         
-        // Listen for real-time changes
+        // Listen for real-time changes (not hero — hero is localStorage-primary)
         const channels = [
             supabase.channel('public:products').on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchProducts),
             supabase.channel('public:orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders),
             supabase.channel('public:inventory').on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_batches' }, fetchInventoryBatches),
-            supabase.channel('public:hero').on('postgres_changes', { event: '*', schema: 'public', table: 'hero_content' }, fetchHero)
         ];
 
         channels.forEach(ch => ch.subscribe());
@@ -125,16 +129,32 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const fetchData = async () => {
-        // Show cached data immediately — don't wait for Supabase
-        const cachedProducts = localStorage.getItem('aba_products');
-        const cachedHero = localStorage.getItem('aba_hero');
-        if (cachedProducts) setProducts(JSON.parse(cachedProducts));
-        if (cachedHero) setHero(JSON.parse(cachedHero));
-        setLoading(false); // Unblock UI right away using cache
+        // Hero banners use localStorage as source of truth — load immediately
+        // Never wait for Supabase for hero: RLS may block the anon key from reading
+        const cachedHero = localStorage.getItem('aba_hero_banners');
+        if (cachedHero) {
+            try {
+                const parsed = JSON.parse(cachedHero);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setHero(parsed);
+                } else {
+                    setHero(INITIAL_HERO);
+                }
+            } catch {
+                setHero(INITIAL_HERO);
+            }
+        } else {
+            // No cached banners at all — use default
+            setHero(INITIAL_HERO);
+            localStorage.setItem('aba_hero_banners', JSON.stringify(INITIAL_HERO));
+        }
 
-        // Then silently refresh everything from Supabase in the background
+        // Products and orders are fetched from Supabase as usual
+        const cachedProducts = localStorage.getItem('aba_products');
+        if (cachedProducts) setProducts(JSON.parse(cachedProducts));
+        setLoading(false);
+
         fetchProducts();
-        fetchHero();
         fetchOrders();
         fetchInventoryBatches();
     };
@@ -195,26 +215,25 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const fetchHero = async () => {
-        const { data, error } = await supabase
-            .from('hero_content')
-            .select('*')
-            .eq('id', 1)
-            .single();
-
-        if (error) {
-            console.error('Error fetching hero:', error);
-             const saved = localStorage.getItem('aba_hero');
-             if (saved) setHero(JSON.parse(saved));
-        } else if (data) {
-            const newHero = {
-                titleTop: data.title_top,
-                titleBottom: data.title_bottom,
-                subtitle: data.subtitle,
-                mainImage: data.main_image
-            };
-            setHero(newHero);
-            localStorage.setItem('aba_hero', JSON.stringify(newHero));
+    // fetchHero is intentionally removed from the public flow.
+    // Hero banners are localStorage-primary. Supabase is used as a background
+    // sync target only (write path). This avoids RLS blocking public reads.
+    // The admin saves banners → localStorage updated immediately → site shows them.
+    const syncHeroToSupabase = async (banners: HeroBanner[]) => {
+        try {
+            await supabase.from('hero_banners').delete().neq('id', 0);
+            const toInsert = banners.map((b, idx) => ({
+                title_top: b.titleTop,
+                title_bottom: b.titleBottom,
+                subtitle: b.subtitle,
+                image: b.image,
+                link: b.link,
+                order_index: idx
+            }));
+            await supabase.from('hero_banners').insert(toInsert);
+            console.log('[SiteContext] Hero banners synced to Supabase.');
+        } catch (err) {
+            console.warn('[SiteContext] Could not sync banners to Supabase (this is okay):', err);
         }
     };
 
@@ -295,22 +314,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const updateHero = async (updates: Partial<HeroContent>) => {
-        const dbUpdates: any = {};
-        if (updates.titleTop !== undefined) dbUpdates.title_top = updates.titleTop;
-        if (updates.titleBottom !== undefined) dbUpdates.title_bottom = updates.titleBottom;
-        if (updates.subtitle !== undefined) dbUpdates.subtitle = updates.subtitle;
-        if (updates.mainImage !== undefined) dbUpdates.main_image = updates.mainImage;
+    const updateHero = async (banners: HeroBanner[]) => {
+        // PRIMARY: Save to localStorage immediately. This is instant and works regardless of Supabase RLS.
+        setHero(banners);
+        localStorage.setItem('aba_hero_banners', JSON.stringify(banners));
+        console.log('[SiteContext] Hero banners saved to localStorage:', banners.length, 'banners');
 
-        const { error } = await supabase
-            .from('hero_content')
-            .update(dbUpdates)
-            .eq('id', 1);
-
-        if (error) {
-            console.error('Error updating hero:', error);
-            setHero(prev => ({ ...prev, ...updates }));
-        }
+        // SECONDARY: Try to sync to Supabase in the background (best effort)
+        syncHeroToSupabase(banners);
     };
 
     const createOrder = async (order: Omit<Order, 'id' | 'created_at'>, items: Array<{ product_id: number, quantity: number, price_at_sale: number }>) => {
