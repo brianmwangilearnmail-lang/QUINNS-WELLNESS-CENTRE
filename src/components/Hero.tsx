@@ -5,6 +5,18 @@ import { useSite } from '../context/SiteContext';
 
 const SLIDE_DURATION = 5000; // ms per slide
 
+function useSwipe(onLeft: () => void, onRight: () => void) {
+  const touchStart = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => { touchStart.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart.current === null) return;
+    const diff = touchStart.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) diff > 0 ? onLeft() : onRight();
+    touchStart.current = null;
+  };
+  return { onTouchStart, onTouchEnd };
+}
+
 export const Hero: React.FC = () => {
   const { hero } = useSite();
   const [current, setCurrent] = useState(0);
@@ -44,18 +56,21 @@ export const Hero: React.FC = () => {
     };
   }, [hero?.length, isPaused, current]);
 
+  // Touch swipe support
+  const swipe = useSwipe(next, prev);
+
   // Clean loading skeleton while banners haven't been set yet
   if (!hero || hero.length === 0) {
     return (
       <div
-        className="w-full mt-16 md:mt-20 bg-gradient-to-r from-[#14532d]/10 via-[#14532d]/5 to-[#14532d]/10 animate-pulse flex items-center justify-center"
-        style={{ height: 'min(56.25vw, 80vh)', minHeight: '280px' }}
+        className="w-full mt-14 md:mt-20 bg-gradient-to-r from-[#14532d]/10 via-[#14532d]/5 to-[#14532d]/10 animate-pulse flex items-center justify-center"
+        style={{ height: 'min(56.25vw, 60vh)', minHeight: '200px' }}
       >
         <div className="flex flex-col items-center gap-3 opacity-40">
-          <svg className="w-10 h-10 text-[#14532d]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg className="w-8 h-8 md:w-10 md:h-10 text-[#14532d]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 3h18M3 21h18" />
           </svg>
-          <p className="text-[#14532d] text-xs font-bold uppercase tracking-widest">Loading...</p>
+          <p className="text-[#14532d] text-[10px] md:text-xs font-bold uppercase tracking-widest">Loading...</p>
         </div>
       </div>
     );
@@ -82,9 +97,10 @@ export const Hero: React.FC = () => {
 
   return (
     <main
-      className="relative w-full overflow-hidden bg-black mt-16 md:mt-20 z-0"
+      className="relative w-full overflow-hidden bg-black mt-14 md:mt-24 z-0"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      {...swipe}
     >
       {/* Slide container — 16:9 ratio, capped at 80vh */}
       <div

@@ -26,10 +26,10 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
   return (
     <header className="relative z-50 bg-white shadow-md sticky top-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-24">
+        <div className="flex justify-between items-center h-14 md:h-24">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => onPageChange('home')}>
-            <span className="font-display font-black text-3xl text-[#14532d] tracking-tighter">
+            <span className="font-display font-black text-xl md:text-3xl text-[#14532d] tracking-tighter">
               QUINS WELLNESS
             </span>
           </div>
@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
               href="https://wa.me/254726138466?text=Hi%20Quins%20Wellness%2C%20I%27d%20like%20a%20free%20health%20consultation."
               target="_blank"
               rel="noopener noreferrer"
-              className="border-2 border-[#14532d] text-[#14532d] hover:bg-[#14532d] hover:text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-wider transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              className="hidden lg:inline-flex border-2 border-[#14532d] text-[#14532d] hover:bg-[#14532d] hover:text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-wider transition-all hover:-translate-y-0.5 whitespace-nowrap"
             >
               Free Consultation
             </a>

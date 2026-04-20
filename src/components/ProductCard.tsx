@@ -68,7 +68,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
             exit={{ opacity: 0, scale: 0.95, y: 24 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             onClick={e => e.stopPropagation()}
-            className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]"
+            className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[90vh]"
           >
             {/* Close */}
             <button
@@ -79,9 +79,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
             </button>
 
             {/* Image */}
-            <div className="w-full md:w-5/12 bg-gray-50 flex items-center justify-center p-10">
+            <div className="w-full md:w-5/12 bg-gray-50 flex items-center justify-center p-6 md:p-10 max-h-52 md:max-h-none">
               {product.image ? (
-                <img src={product.image} alt={product.title} className="w-full h-full object-contain drop-shadow-2xl" />
+                <img src={product.image} alt={product.title} className="w-full h-full object-contain drop-shadow-2xl" loading="lazy" />
               ) : (
                 <div className="flex flex-col items-center text-gray-300">
                   <Package className="w-16 h-16 mb-4" />
@@ -158,11 +158,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
 
   // ─── CARD (shared layout) ──────────────────────────────────────
   const cardContent = (
-    <div className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${variant === 'new-arrival' ? 'min-w-[260px] w-[260px]' : ''}`}>
+    <div className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${variant === 'new-arrival' ? 'min-w-[200px] w-[200px] md:min-w-[260px] md:w-[260px]' : ''}`}>
       {/* Image area */}
-      <div className="relative bg-gray-50 aspect-square flex items-center justify-center p-6">
+      <div className="relative bg-gray-50 aspect-square flex items-center justify-center p-3 md:p-6">
         {variant === 'default' && (
-          <span className="absolute top-3 left-3 px-2 py-1 rounded-full text-[0.6rem] font-black uppercase bg-[#15803d] text-white z-10">
+          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full text-[0.5rem] md:text-[0.6rem] font-black uppercase bg-[#15803d] text-white z-10 truncate max-w-[80%]">
             {product.brand}
           </span>
         )}
@@ -205,40 +205,40 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col gap-3 flex-grow">
+      <div className="p-3 md:p-4 flex flex-col gap-2 md:gap-3 flex-grow">
         <div>
-          <h3 className="font-bold text-gray-900 text-base leading-tight">{product.title}</h3>
-          <p className="text-gray-500 text-sm mt-1.5 leading-relaxed line-clamp-2">{descriptionPreview}</p>
-          <p className="text-red-500 font-black text-xl mt-2">Ksh.{product.price.toLocaleString()}.00</p>
+          <h3 className="font-bold text-gray-900 text-xs md:text-base leading-tight line-clamp-2">{product.title}</h3>
+          <p className="text-gray-500 text-xs mt-1 leading-relaxed line-clamp-2 hidden md:block">{descriptionPreview}</p>
+          <p className="text-red-500 font-black text-sm md:text-xl mt-1 md:mt-2">Ksh.{product.price.toLocaleString()}.00</p>
         </div>
 
         {/* Quantity row */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
           <button
             onClick={e => { e.stopPropagation(); setQuantity(q => Math.max(1, q - 1)); }}
-            className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition-colors"
+            className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition-colors text-sm"
           >−</button>
-          <span className="text-sm font-bold text-gray-900 w-5 text-center">{quantity}</span>
+          <span className="text-xs md:text-sm font-bold text-gray-900 w-4 text-center">{quantity}</span>
           <button
             onClick={e => { e.stopPropagation(); setQuantity(q => q + 1); }}
-            className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition-colors"
+            className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition-colors text-sm"
           >+</button>
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-2 mt-auto">
+        <div className="flex gap-1.5 md:gap-2 mt-auto">
           <button
             onClick={handleAddToCart}
-            className="flex-1 bg-[#15803d] hover:bg-[#14532d] text-white py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+            className="flex-1 bg-[#15803d] hover:bg-[#14532d] text-white py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all flex items-center justify-center gap-1 md:gap-2 shadow-sm active:scale-95"
           >
-            <ShoppingCart className="w-4 h-4" />
-            {added ? 'Added!' : 'Add'}
+            <ShoppingCart className="w-3 h-3 md:w-4 md:h-4" />
+            {added ? '✓' : 'Add'}
           </button>
           <button
             onClick={() => { setModalQuantity(1); setIsModalOpen(true); }}
-            className="flex-1 border border-gray-200 text-gray-700 hover:border-[#15803d] hover:text-[#15803d] py-2.5 rounded-xl font-bold text-sm transition-all"
+            className="flex-1 border border-gray-200 text-gray-700 hover:border-[#15803d] hover:text-[#15803d] py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all"
           >
-            View Details
+            Details
           </button>
         </div>
       </div>

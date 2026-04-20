@@ -38,12 +38,12 @@ export const ContactPage: React.FC = () => {
   };
 
   return (
-    <div className="relative z-20 py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-gray-900">
-      <div className="text-center mb-16">
-        <h1 className="font-display font-black text-5xl md:text-7xl tracking-tighter mb-6 uppercase">
+    <div className="relative z-20 py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-gray-900">
+      <div className="text-center mb-10 md:mb-16">
+        <h1 className="font-display font-black text-4xl md:text-7xl tracking-tighter mb-4 md:mb-6 uppercase">
           GET IN <span className="text-[#14532d]">TOUCH</span>
         </h1>
-        <p className="text-xl text-gray-600 font-medium max-w-2xl mx-auto mb-4">
+        <p className="text-base md:text-xl text-gray-600 font-medium max-w-2xl mx-auto mb-4">
           Have questions about our products or your order? We're here to help.
         </p>
         <div className="flex flex-col items-center gap-2 text-lg font-bold text-[#15803d]">
@@ -52,7 +52,7 @@ export const ContactPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-3xl p-8 md:p-12 shadow-xl">
+      <div className="bg-white border border-gray-200 rounded-3xl p-5 md:p-12 shadow-xl">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-2 gap-6 text-left">
             <div className="space-y-2">
@@ -146,12 +146,12 @@ export const ContactPage: React.FC = () => {
 
 export const SciencePage: React.FC = () => {
     return (
-      <div className="relative z-20 py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-gray-900">
-        <div className="text-center mb-16">
-          <h1 className="font-display font-black text-5xl md:text-7xl tracking-tighter mb-6 uppercase">
+      <div className="relative z-20 py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-gray-900">
+        <div className="text-center mb-10 md:mb-16">
+          <h1 className="font-display font-black text-4xl md:text-7xl tracking-tighter mb-4 md:mb-6 uppercase">
             OUR <span className="text-[#16a34a]">SCIENCE</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto font-medium leading-relaxed">
+          <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto font-medium leading-relaxed">
             At Quins Wellness Centre, we don't guess. We test. Our formulations are built on clinical research and rigorous scientific validation.
           </p>
         </div>

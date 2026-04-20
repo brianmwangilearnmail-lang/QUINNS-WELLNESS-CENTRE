@@ -7,14 +7,14 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
   return (
-    <footer className="relative z-20 bg-gray-900 text-white pt-20 pb-10">
+    <footer className="relative z-20 bg-gray-900 text-white pt-12 md:pt-20 pb-8 md:pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          <div className="col-span-1 md:col-span-1">
-            <span className="font-display font-black text-3xl text-[#14532d] tracking-tighter mb-6 block leading-snug">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-10 md:mb-16">
+          <div className="col-span-2 md:col-span-1">
+            <span className="font-display font-black text-xl md:text-3xl text-[#14532d] tracking-tighter mb-4 md:mb-6 block leading-snug">
               Quins Wellness Centre
             </span>
-            <p className="text-gray-400 font-medium mb-6">
+            <p className="text-gray-400 font-medium mb-4 md:mb-6 text-sm">
               Premium dietary supplements formulated for maximum efficacy and daily wellness.
             </p>
             <div className="flex space-x-4 mb-6">
