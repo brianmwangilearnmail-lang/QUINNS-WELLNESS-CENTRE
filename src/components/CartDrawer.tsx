@@ -258,15 +258,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         {/* Policy Details */}
                         <div className="space-y-2 text-[12px] text-gray-700 leading-relaxed pt-1">
                           <p>
-                            We <span className="font-black">ONLY</span> accept <span className="font-black">Cash or M-pesa on delivery IF</span>:
-                          </p>
-
-                          <p>
-                            1. Within <span className="font-bold">Nairobi Metropolis</span>.
-                          </p>
-
-                          <p>
-                            2. Cash on Delivery also if you are picking your order <span className="font-bold">at our PickUp-Shop in Nairobi CBD</span>, at <span className="font-bold">Nyota building</span>, <span className="font-bold">Accra road</span>, 2nd floor, Room 201.
+                            We <span className="font-black">ONLY</span> accept <span className="font-black">Cash or M-pesa on delivery IF</span> you are within the <span className="font-bold">Nairobi Metropolis</span>.
                           </p>
 
                           <p>
