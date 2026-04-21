@@ -38,11 +38,11 @@ export async function compressImage(base64: string, maxKB = 150): Promise<string
 
             // Try progressively lower quality until we hit the target size
             let quality = 0.8;
-            let compressed = canvas.toDataURL('image/jpeg', quality);
+            let compressed = canvas.toDataURL('image/webp', quality);
 
             while (compressed.length / 1024 > maxKB && quality > 0.2) {
                 quality -= 0.1;
-                compressed = canvas.toDataURL('image/jpeg', quality);
+                compressed = canvas.toDataURL('image/webp', quality);
             }
 
             console.log(
