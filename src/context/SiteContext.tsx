@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { compressImage } from '../lib/compressImage';
 
 export interface Product {
     id: number;
@@ -233,16 +234,37 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const saved = localStorage.getItem('aba_products');
             if (saved) setProducts(JSON.parse(saved));
         } else if (data) {
-            const mapped = data.map((p: any) => ({
-                id: p.id,
-                title: p.title,
-                composition: p.composition,
-                description: p.description || '',
-                brand: p.brand,
-                price: parseFloat(p.price),
-                image: p.image,
-                inStock: p.in_stock
+            const mapped = await Promise.all(data.map(async (p: any) => {
+                let finalImage = p.image;
+                
+                // Self-healing database: If the image is a massive base64 string, compress it and save it back
+                if (finalImage && finalImage.startsWith('data:') && Math.round(finalImage.length / 1024) > 160) {
+                    try {
+                        const start = Date.now();
+                        finalImage = await compressImage(finalImage, 150);
+                        console.log(`[SiteContext] Compressed product ${p.id} image in ${Date.now() - start}ms`);
+                        
+                        // Fire-and-forget sync back to Supabase to fix the database bloat forever
+                        supabase.from('products').update({ image: finalImage }).eq('id', p.id).then(({error}) => {
+                            if (!error) console.log(`[SiteContext] Saved optimized image for product ${p.id} to Supabase.`);
+                        });
+                    } catch (e) {
+                        console.error('Compression failed for', p.id, e);
+                    }
+                }
+
+                return {
+                    id: p.id,
+                    title: p.title,
+                    composition: p.composition,
+                    description: p.description || '',
+                    brand: p.brand,
+                    price: parseFloat(p.price),
+                    image: finalImage,
+                    inStock: p.in_stock
+                };
             }));
+            
             setProducts(mapped);
             localStorage.setItem('aba_products', JSON.stringify(mapped));
         }
@@ -325,8 +347,10 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (updates.composition !== undefined) dbUpdates.composition = updates.composition;
         if (updates.description !== undefined) dbUpdates.description = updates.description;
         if (updates.price !== undefined) dbUpdates.price = updates.price;
-        if (updates.image !== undefined) dbUpdates.image = updates.image;
         if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock;
+        if (updates.image !== undefined) {
+             dbUpdates.image = updates.image ? await compressImage(updates.image, 150) : updates.image;
+        }
 
         const { error } = await supabase
             .from('products')
@@ -340,6 +364,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const addProduct = async (p: Omit<Product, 'id'>) => {
+        const processedImage = p.image ? await compressImage(p.image, 150) : p.image;
         const { error } = await supabase
             .from('products')
             .insert([{
@@ -348,7 +373,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 composition: p.composition,
                 description: p.description,
                 price: p.price,
-                image: p.image,
+                image: processedImage,
                 in_stock: p.inStock
             }]);
 
