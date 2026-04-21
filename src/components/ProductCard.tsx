@@ -68,20 +68,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
             exit={{ opacity: 0, scale: 0.95, y: 24 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             onClick={e => e.stopPropagation()}
-            className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[90vh]"
+            className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl flex flex-col md:flex-row max-h-[95vh] md:max-h-[90vh] overflow-y-auto md:overflow-hidden"
           >
-            {/* Close */}
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
+            {/* Image (Sticky on mobile) */}
+            <div className="w-full md:w-5/12 bg-white/95 backdrop-blur-md flex items-center justify-center p-4 md:p-10 h-48 md:h-auto md:max-h-none sticky top-0 z-40 border-b border-gray-100 md:border-b-0 shrink-0">
+              {/* Close Button */}
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-3 right-3 md:top-4 md:right-4 z-50 w-9 h-9 md:w-10 md:h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors shadow-sm"
+              >
+                <X className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+              </button>
 
-            {/* Image */}
-            <div className="w-full md:w-5/12 bg-gray-50 flex items-center justify-center p-6 md:p-10 max-h-52 md:max-h-none">
               {product.image ? (
-                <img src={product.image} alt={product.title} className="w-full h-full object-contain drop-shadow-2xl" loading="lazy" />
+                <img src={product.image} alt={product.title} className="w-full h-full object-contain drop-shadow-xl" loading="lazy" />
               ) : (
                 <div className="flex flex-col items-center text-gray-300">
                   <Package className="w-16 h-16 mb-4" />
@@ -91,7 +91,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
             </div>
 
             {/* Details */}
-            <div className="w-full md:w-7/12 p-8 flex flex-col overflow-y-auto">
+            <div className="w-full md:w-7/12 p-6 md:p-8 flex flex-col md:overflow-y-auto shrink-0 z-10 bg-white">
               <span className="inline-block px-3 py-1 bg-[#15803d]/10 text-[#15803d] rounded-full text-[0.65rem] font-black uppercase tracking-widest w-max mb-4">
                 {product.brand}
               </span>
