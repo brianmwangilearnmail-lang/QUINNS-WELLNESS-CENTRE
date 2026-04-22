@@ -478,6 +478,12 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const deleteProduct = async (id: number) => {
+        // Detach product from any historical orders to prevent foreign key constraint errors
+        await supabase
+            .from('order_items')
+            .update({ product_id: null })
+            .eq('product_id', id);
+
         const { error } = await supabase
             .from('products')
             .delete()
@@ -485,7 +491,13 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (error) {
             console.error('Error deleting product:', error);
-            setProducts(prev => prev.filter(p => p.id !== id));
+        } else {
+            // Update local state only on success
+            setProducts(prev => {
+                const updated = prev.filter(p => p.id !== id);
+                localStorage.setItem('aba_products', JSON.stringify(updated));
+                return updated;
+            });
         }
     };
 
