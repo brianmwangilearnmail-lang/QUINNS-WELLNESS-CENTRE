@@ -1,6 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { compressImage } from '../lib/compressImage';
+
+export interface Brand {
+    id: string;
+    name: string;
+}
 
 export interface Product {
     id: number;
@@ -74,6 +79,7 @@ interface SiteContextType {
     analytics: AnalyticsData;
     inventoryBatches: InventoryBatch[];
     orders: Order[];
+    brands: Brand[];
     loading: boolean;
     updateProduct: (id: number, updates: Partial<Product>) => Promise<void>;
     addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
@@ -81,6 +87,8 @@ interface SiteContextType {
     updateHero: (banners: HeroBanner[]) => Promise<void>;
     createOrder: (order: Omit<Order, 'id' | 'created_at'>, items: Array<{ product_id: number, quantity: number, price_at_sale: number }>) => Promise<{ success: boolean; error?: string }>;
     updateOrderStatus: (orderId: number, status: Order['status']) => Promise<void>;
+    addBrand: (name: string) => void;
+    deleteBrand: (id: string) => void;
     initialLoading: boolean;
 }
 
@@ -110,6 +118,51 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [inventoryBatches, setInventoryBatches] = useState<InventoryBatch[]>([]);
     const [loading, setLoading] = useState(false); // Legacy loading flag
     const [initialLoading, setInitialLoading] = useState(true); // Tracks first true data fetch from Supabase
+
+    // Custom brands added by admin (stored in localStorage)
+    const [customBrands, setCustomBrands] = useState<Brand[]>(() => {
+        try {
+            const saved = localStorage.getItem('aba_custom_brands');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+
+    // All brands = unique brands from products + admin-added custom brands
+    const brands = useMemo<Brand[]>(() => {
+        const uniqueNames: string[] = [
+            ...new Set<string>(
+                products.map(p => p.brand).filter((b): b is string => typeof b === 'string' && b.trim().length > 0)
+            )
+        ];
+        const fromProducts: Brand[] = uniqueNames.map(name => ({
+            id: name.toLowerCase().replace(/\s+/g, '-'),
+            name,
+        }));
+        const customUnique = customBrands.filter(
+            cb => !fromProducts.some(b => b.name.toLowerCase() === cb.name.toLowerCase())
+        );
+        return [...fromProducts, ...customUnique].sort((a, b) => a.name.localeCompare(b.name));
+    }, [products, customBrands]);
+
+    const addBrand = (name: string) => {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        const newBrand: Brand = { id: trimmed.toLowerCase().replace(/\s+/g, '-'), name: trimmed };
+        setCustomBrands(prev => {
+            if (prev.some(b => b.name.toLowerCase() === trimmed.toLowerCase())) return prev;
+            const updated = [...prev, newBrand];
+            localStorage.setItem('aba_custom_brands', JSON.stringify(updated));
+            return updated;
+        });
+    };
+
+    const deleteBrand = (id: string) => {
+        setCustomBrands(prev => {
+            const updated = prev.filter(b => b.id !== id);
+            localStorage.setItem('aba_custom_brands', JSON.stringify(updated));
+            return updated;
+        });
+    };
 
     // Initial Fetch
     useEffect(() => {
@@ -478,6 +531,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             analytics: calculateAnalytics(), 
             inventoryBatches, 
             orders,
+            brands,
             loading,
             initialLoading, 
             updateProduct, 
@@ -485,7 +539,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             deleteProduct, 
             updateHero,
             createOrder,
-            updateOrderStatus
+            updateOrderStatus,
+            addBrand,
+            deleteBrand
         }}>
             {children}
         </SiteContext.Provider>

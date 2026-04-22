@@ -7,24 +7,24 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
   return (
-    <footer className="relative z-20 bg-gray-900 text-white pt-12 md:pt-20 pb-8 md:pb-10">
+    <footer className="relative z-20 bg-[#0A2713] text-white pt-12 md:pt-20 pb-8 md:pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-10 md:mb-16">
           <div className="col-span-2 md:col-span-1">
-            <span className="font-display font-black text-xl md:text-3xl text-[#14532d] tracking-tighter mb-4 md:mb-6 block leading-snug">
+            <span className="font-display font-black text-xl md:text-3xl text-white tracking-tighter mb-4 md:mb-6 block leading-snug">
               Quins Wellness Centre
             </span>
             <p className="text-gray-400 font-medium mb-4 md:mb-6 text-sm">
               Premium dietary supplements formulated for maximum efficacy and daily wellness.
             </p>
             <div className="flex space-x-4 mb-6">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#14532d] transition-colors p-2"><Facebook className="w-5 h-5" /></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#14532d] transition-colors p-2"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#14532d] transition-colors p-2"><Instagram className="w-5 h-5" /></a>
+              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#15803d] hover:text-white transition-colors p-2"><Facebook className="w-5 h-5" /></a>
+              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#15803d] hover:text-white transition-colors p-2"><Twitter className="w-5 h-5" /></a>
+              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#15803d] hover:text-white transition-colors p-2"><Instagram className="w-5 h-5" /></a>
             </div>
             <div className="space-y-2 text-gray-400 font-medium">
               <p>Email: <a href="mailto:kequins09@gmail.com" className="hover:text-white transition-colors">kequins09@gmail.com</a></p>
-              <p>Phone: <a href="tel:+254714279143" className="hover:text-white transition-colors">+254 714 279143</a></p>
+              <p>Phone: <a href="tel:+254726138466" className="hover:text-white transition-colors">+254 726 138466</a></p>
             </div>
           </div>
           <div>

@@ -17,6 +17,7 @@ export type Page = 'home' | 'about' | 'contact' | 'science' | 'privacy' | 'admin
 function MainApp() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [activeBrand, setActiveBrand] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('aba_admin_auth') === 'true';
   });
@@ -74,7 +75,7 @@ function MainApp() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'home': return <HomePage />;
+      case 'home': return <HomePage activeBrand={activeBrand} onBrandFilter={setActiveBrand} />;
       case 'about': return <AboutPage />;
       case 'contact': return <ContactPage />;
       case 'science': return <SciencePage />;
@@ -94,7 +95,8 @@ function MainApp() {
       <Header 
         currentPage={currentPage} 
         onPageChange={(p) => { setCurrentPage(p); window.location.hash = p; }} 
-        onCartToggle={() => setIsCartOpen(true)} 
+        onCartToggle={() => setIsCartOpen(true)}
+        onBrandFilter={(brand) => { setActiveBrand(brand); }}
       />
       )}
 

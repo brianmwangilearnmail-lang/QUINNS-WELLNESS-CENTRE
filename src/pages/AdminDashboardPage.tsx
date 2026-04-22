@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LayoutDashboard, Plus, Trash2, Edit2, LogOut, Package, Image as ImageIcon, Layout, Save, X, Check, Upload, CloudUpload, BarChart3, MessageSquare, Download, Mail, ShoppingBag, Clock, CheckCircle2, Truck, Settings, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Plus, Trash2, Edit2, LogOut, Package, Image as ImageIcon, Layout, Save, X, Check, Upload, CloudUpload, BarChart3, MessageSquare, Download, Mail, ShoppingBag, Clock, CheckCircle2, Truck, Settings, Loader2, Tag } from 'lucide-react';
 import { getEmailSettings, connectGmail, clearEmailSettings, sendDispatchReceipt, EmailSettings } from '../lib/emailService';
 import { motion, AnimatePresence } from 'motion/react';
-import { useSite, Product, Order } from '../context/SiteContext';
+import { useSite, Product, Order, HeroBanner, Brand } from '../context/SiteContext';
 import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
 import { supabase } from '../lib/supabase';
 
@@ -11,8 +11,8 @@ interface AdminDashboardPageProps {
 }
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => {
-  const { products, hero, orders, updateHero, updateProduct, addProduct, deleteProduct, updateOrderStatus } = useSite();
-  const [activeTab, setActiveTab] = useState<'hero' | 'products' | 'analytics' | 'inquiries' | 'orders' | 'settings'>('analytics');
+  const { products, hero, orders, updateHero, updateProduct, addProduct, deleteProduct, updateOrderStatus, brands, addBrand, deleteBrand } = useSite();
+  const [activeTab, setActiveTab] = useState<'hero' | 'products' | 'analytics' | 'inquiries' | 'orders' | 'settings' | 'brands'>('analytics');
   
   // Email Settings state
   const [emailSettings, setEmailSettings] = useState<EmailSettings | null>(getEmailSettings());
@@ -35,6 +35,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
     confirmText?: string;
     cancelText?: string;
   } | null>(null);
+
+  // Brand modal state
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [newBrandName, setNewBrandName] = useState('');
+  const [useCustomBrand, setUseCustomBrand] = useState(false);
+  const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
 
   useEffect(() => {
     if (notification) {
@@ -189,17 +195,19 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
       title: '',
       composition: '',
       description: '',
-      brand: 'Natural Factors',
+      brand: '',
       price: 0,
       image: '',
       inStock: true
     });
+    setUseCustomBrand(false);
     setIsModalOpen(true);
   };
 
   const openEditModal = (product: Product) => {
     setModalMode('edit');
     setEditingProduct(product);
+    setUseCustomBrand(false);
     setIsModalOpen(true);
   };
 
@@ -347,6 +355,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
               className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-4 font-black tracking-widest text-sm uppercase ${activeTab === 'inquiries' ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
             >
               <MessageSquare className="w-5 h-5" /> Inquiries
+            </button>
+            <button 
+              onClick={() => setActiveTab('brands')}
+              className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-4 font-black tracking-widest text-sm uppercase ${activeTab === 'brands' ? 'bg-[#15803d] text-white border-[#15803d]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
+            >
+              <Tag className="w-5 h-5" /> Brands
             </button>
             <button 
               onClick={() => setActiveTab('settings')}
@@ -714,6 +728,132 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                             </table>
                         </div>
                     </div>
+                </motion.div>
+              ) : activeTab === 'brands' ? (
+                <motion.div
+                  key="brands-tab"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-2xl">
+                    <div className="flex justify-between items-center mb-8">
+                      <div className="flex items-center gap-4">
+                        <Tag className="w-6 h-6 text-[#15803d]" />
+                        <h2 className="font-display font-black text-2xl text-gray-900 uppercase tracking-tighter">Brand Management</h2>
+                      </div>
+                      <button
+                        onClick={() => { setNewBrandName(''); setIsBrandModalOpen(true); }}
+                        className="px-6 py-2 bg-[#14532d] hover:bg-[#114022] text-white rounded-xl font-black text-xs tracking-widest flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                      >
+                        <Plus className="w-4 h-4" /> ADD BRAND
+                      </button>
+                    </div>
+
+                    {brands.length === 0 ? (
+                      <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <Tag className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                        <p className="text-gray-400 font-bold uppercase tracking-widest">No brands yet</p>
+                        <p className="text-xs text-gray-400 mt-1">Brands are auto-created from your products, or add custom ones above.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {brands.map(brand => {
+                          const brandProducts = products.filter(p => p.brand === brand.name);
+                          const productCount = brandProducts.length;
+                          const isFromProducts = productCount > 0;
+                          const isExpanded = expandedBrand === brand.name;
+                          return (
+                            <div key={brand.id} className={`bg-gray-50 border transition-all rounded-2xl overflow-hidden ${isExpanded ? 'border-[#15803d]' : 'border-gray-100 hover:border-[#15803d]/30'}`}>
+                              <div 
+                                onClick={() => setExpandedBrand(isExpanded ? null : brand.name)}
+                                className="flex items-center justify-between p-4 cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isExpanded ? 'bg-[#15803d] text-white' : 'bg-[#15803d]/10 text-[#15803d]'}`}>
+                                    <Tag className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <p className="font-black text-gray-900 text-sm tracking-tight">{brand.name}</p>
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">
+                                      {productCount} product{productCount !== 1 ? 's' : ''}
+                                      {isFromProducts ? ' · from catalog' : ' · custom'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {!isFromProducts && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setConfirmModal({
+                                          title: 'Delete Brand',
+                                          message: `Remove "${brand.name}" from the brand list?`,
+                                          confirmText: 'DELETE',
+                                          onConfirm: () => { deleteBrand(brand.id); setConfirmModal(null); setNotification({ message: 'Brand removed', type: 'success' }); }
+                                        });
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-50 rounded-xl transition-all"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-red-400" />
+                                    </button>
+                                  )}
+                                  {isFromProducts && (
+                                    <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest mr-2">Auto</span>
+                                  )}
+                                </div>
+                              </div>
+                              <AnimatePresence>
+                                {isExpanded && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="border-t border-gray-100 bg-white"
+                                    >
+                                        {brandProducts.length > 0 ? (
+                                            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                                {brandProducts.map(product => (
+                                                    <div key={product.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                                                        {product.image ? (
+                                                            <img src={product.image} alt={product.title} className="w-10 h-10 object-contain bg-white rounded-lg p-1 border border-gray-200" />
+                                                        ) : (
+                                                            <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                                                                <ImageIcon className="w-4 h-4 text-gray-400" />
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs font-bold text-gray-900 truncate">{product.title}</p>
+                                                            <p className="text-[10px] text-gray-500 font-medium">KSh {product.price.toLocaleString()}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); openEditModal(product); }}
+                                                            className="p-1.5 text-gray-400 hover:text-[#15803d] hover:bg-[#15803d]/10 rounded-lg transition-colors"
+                                                            title="Edit Product"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-6 text-center text-xs text-gray-400 font-bold uppercase tracking-widest">
+                                                No products assigned to this brand yet
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-6 leading-relaxed">
+                      💡 Brands tagged on products appear here automatically. Use <strong>Add Brand</strong> to pre-register a brand before assigning products.
+                    </p>
+                  </div>
                 </motion.div>
               ) : activeTab === 'settings' ? (
                 <motion.div 
@@ -1172,15 +1312,39 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-left">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Brand Name</label>
-                                <input 
-                                    type="text" 
-                                    required
-                                    value={editingProduct?.brand || ''}
-                                    onChange={(e) => setEditingProduct({...editingProduct!, brand: e.target.value})}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-sm" 
-                                    placeholder="e.g. Natural Factors"
-                                />
+                                <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Brand</label>
+                                {!useCustomBrand ? (
+                                  <div className="flex gap-2">
+                                    <select
+                                      required={!useCustomBrand}
+                                      value={editingProduct?.brand || ''}
+                                      onChange={(e) => {
+                                        if (e.target.value === '__custom__') { setUseCustomBrand(true); setEditingProduct({...editingProduct!, brand: ''}); }
+                                        else setEditingProduct({...editingProduct!, brand: e.target.value});
+                                      }}
+                                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-sm"
+                                    >
+                                      <option value="">Select brand...</option>
+                                      {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                                      <option value="__custom__">+ Other (type manually)</option>
+                                    </select>
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      required
+                                      autoFocus
+                                      value={editingProduct?.brand || ''}
+                                      onChange={(e) => setEditingProduct({...editingProduct!, brand: e.target.value})}
+                                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-sm"
+                                      placeholder="e.g. Natural Factors"
+                                    />
+                                    <button type="button" onClick={() => { setUseCustomBrand(false); setEditingProduct({...editingProduct!, brand: ''}); }} className="px-3 py-2 text-xs text-gray-400 hover:text-gray-700 border border-gray-200 rounded-xl">
+                                      ↩
+                                    </button>
+                                  </div>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Price (KSh)</label>
@@ -1256,6 +1420,79 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Brand Modal */}
+      <AnimatePresence>
+        {isBrandModalOpen && (
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsBrandModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-white border border-gray-200 rounded-[2rem] p-8 shadow-2xl z-10"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-[#15803d]/10 rounded-xl flex items-center justify-center">
+                  <Tag className="w-5 h-5 text-[#15803d]" />
+                </div>
+                <h3 className="font-display font-black text-xl text-gray-900 uppercase tracking-tighter">Add New Brand</h3>
+                <button onClick={() => setIsBrandModalOpen(false)} className="ml-auto p-1 hover:bg-gray-100 rounded-full text-gray-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Brand Name</label>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={newBrandName}
+                    onChange={e => setNewBrandName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newBrandName.trim()) {
+                          addBrand(newBrandName.trim());
+                          setIsBrandModalOpen(false);
+                          setNotification({ message: `Brand "${newBrandName.trim()}" added!`, type: 'success' });
+                        }
+                      }
+                    }}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors font-medium"
+                    placeholder="e.g. Natural Factors"
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setIsBrandModalOpen(false)}
+                    className="flex-1 px-4 py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-xl font-black text-xs tracking-widest border border-gray-200"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!newBrandName.trim()) return;
+                      addBrand(newBrandName.trim());
+                      setIsBrandModalOpen(false);
+                      setNotification({ message: `Brand "${newBrandName.trim()}" added!`, type: 'success' });
+                    }}
+                    className="flex-[2] bg-[#15803d] hover:bg-[#114022] text-white py-3 rounded-xl font-black text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95"
+                  >
+                    <Plus className="w-4 h-4" /> ADD BRAND
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

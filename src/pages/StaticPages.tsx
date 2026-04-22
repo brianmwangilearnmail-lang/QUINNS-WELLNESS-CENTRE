@@ -48,7 +48,7 @@ export const ContactPage: React.FC = () => {
         </p>
         <div className="flex flex-col items-center gap-2 text-lg font-bold text-[#15803d]">
           <a href="mailto:kequins09@gmail.com" className="hover:text-gray-900 transition-colors">kequins09@gmail.com</a>
-          <a href="tel:+254714279143" className="hover:text-gray-900 transition-colors">+254 714 279143</a>
+          <a href="tel:+254726138466" className="hover:text-gray-900 transition-colors">+254 726 138466</a>
         </div>
       </div>
 

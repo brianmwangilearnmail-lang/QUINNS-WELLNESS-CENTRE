@@ -158,7 +158,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
 
   // ─── CARD (shared layout) ──────────────────────────────────────
   const cardContent = (
-    <div className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${variant === 'new-arrival' ? 'min-w-[200px] w-[200px] md:min-w-[260px] md:w-[260px]' : ''}`}>
+    <div id={`product-${product.id}`} className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${variant === 'new-arrival' ? 'min-w-[200px] w-[200px] md:min-w-[260px] md:w-[260px]' : ''}`}>
       {/* Image area */}
       <div className="relative bg-gray-50 aspect-square flex items-center justify-center p-3 md:p-6">
         {variant === 'default' && (

@@ -63,7 +63,7 @@ export const Hero: React.FC = () => {
   if (!hero || hero.length === 0) {
     return (
       <div
-        className="w-full mt-14 md:mt-20 bg-gradient-to-r from-[#14532d]/10 via-[#14532d]/5 to-[#14532d]/10 animate-pulse flex items-center justify-center"
+        className="w-full bg-gradient-to-r from-[#14532d]/10 via-[#14532d]/5 to-[#14532d]/10 animate-pulse flex items-center justify-center"
         style={{ height: 'min(56.25vw, 60vh)', minHeight: '200px' }}
       >
         <div className="flex flex-col items-center gap-3 opacity-40">
@@ -97,7 +97,7 @@ export const Hero: React.FC = () => {
 
   return (
     <main
-      className="relative w-full overflow-hidden bg-black mt-14 md:mt-24 z-0"
+      className="relative w-full overflow-hidden bg-black z-0"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       {...swipe}
