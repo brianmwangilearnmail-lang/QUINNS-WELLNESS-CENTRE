@@ -831,13 +831,34 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                                             <p className="text-xs font-bold text-gray-900 truncate">{product.title}</p>
                                                             <p className="text-[10px] text-gray-500 font-medium">KSh {product.price.toLocaleString()}</p>
                                                         </div>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); openEditModal(product); }}
-                                                            className="p-1.5 text-gray-400 hover:text-[#15803d] hover:bg-[#15803d]/10 rounded-lg transition-colors"
-                                                            title="Edit Product"
-                                                        >
-                                                            <Edit2 className="w-3.5 h-3.5" />
-                                                        </button>
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); openEditModal(product); }}
+                                                                className="p-1.5 text-gray-400 hover:text-[#15803d] hover:bg-[#15803d]/10 rounded-lg transition-colors"
+                                                                title="Edit Product"
+                                                            >
+                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation();
+                                                                    setConfirmModal({
+                                                                        title: 'Delete Product',
+                                                                        message: `Are you sure you want to delete "${product.title}"?`,
+                                                                        confirmText: 'DELETE',
+                                                                        onConfirm: () => {
+                                                                            deleteProduct(product.id);
+                                                                            setConfirmModal(null);
+                                                                            setNotification({ message: 'Product deleted successfully', type: 'success' });
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Delete Product"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>

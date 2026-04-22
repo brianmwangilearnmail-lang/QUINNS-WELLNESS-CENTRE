@@ -312,7 +312,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         onClick={() => setCheckoutStep('form')}
                         className="w-full bg-[#14532d] hover:bg-[#114022] text-white py-4 rounded-2xl font-black text-lg tracking-widest transition-all hover:shadow-[0_10px_30px_rgba(20,83,45,0.5)] flex items-center justify-center gap-3 active:scale-95 group"
                       >
-                        <span>CHECKOUT NOW</span>
+                        <span>ORDER NOW</span>
                         <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                       </button>
                     ) : (

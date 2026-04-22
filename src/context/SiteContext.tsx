@@ -395,18 +395,40 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const orderVolume = completedOrders.length;
         const refundRate = orders.length > 0 ? (refundedOrders.length / orders.length) * 100 : 0;
         
-        // Mocking change percentages and trends based on small logic for now
+        // Calculate Top SKUs dynamically
+        const skuStats: Record<number, { id: number; title: string; sales: number; revenue: number }> = {};
+        completedOrders.forEach(order => {
+            if (order.order_items) {
+                order.order_items.forEach(item => {
+                    const pid = item.product_id;
+                    if (!skuStats[pid]) {
+                        const productTitle = item.products?.title || products.find(p => p.id === pid)?.title || `Product #${pid}`;
+                        skuStats[pid] = {
+                            id: pid,
+                            title: productTitle,
+                            sales: 0,
+                            revenue: 0
+                        };
+                    }
+                    skuStats[pid].sales += item.quantity;
+                    skuStats[pid].revenue += (item.quantity * item.price_at_sale);
+                });
+            }
+        });
+
+        const topSkus = Object.values(skuStats)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 3);
+
+        // If there are no completed orders, we can fallback to an empty array
+        
         return {
             operations: {
                 totalRevenue: { value: `Ksh ${totalRevenue.toLocaleString()}`, change: 15, trend: 'up', label: 'Net Revenue' },
                 orderVolume: { value: orderVolume, change: 8, trend: 'up', label: 'Total Orders' },
                 daysOnHand: { value: '42 Days', change: -5, trend: 'down', label: 'Stock Health' }, // Placeholder logic
                 refundRate: { value: `${refundRate.toFixed(1)}%`, change: -0.2, trend: 'down', label: 'Refund Rate' },
-                topSkus: [
-                   { id: 1, title: 'Wild Alaskan Salmon Oil', sales: 45, revenue: 157500 },
-                   { id: 5, title: 'Magnesium Citrate', sales: 38, revenue: 83600 },
-                   { id: 7, title: 'Methylcobalamin B12', sales: 31, revenue: 37200 }
-                ]
+                topSkus: topSkus
             }
         };
     };
