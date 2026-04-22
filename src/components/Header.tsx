@@ -12,7 +12,7 @@ interface SearchResult {
 }
 
 interface HeaderProps {
-  onPageChange: (page: 'home' | 'about' | 'contact' | 'science' | 'privacy') => void;
+  onPageChange: (page: 'home' | 'about' | 'contact' | 'privacy') => void;
   currentPage: string;
   onCartToggle: () => void;
   onBrandFilter: (brand: string | null) => void;
@@ -126,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
     setTimeout(() => document.getElementById('shop-section')?.scrollIntoView({ behavior: 'smooth' }), 300);
   };
 
-  const handleMobileNav = (page: 'home' | 'about' | 'contact' | 'science' | 'privacy') => {
+  const handleMobileNav = (page: 'home' | 'about' | 'contact' | 'privacy') => {
     setIsMobileMenuOpen(false);
     onPageChange(page);
     if (page === 'home') {
@@ -227,9 +227,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
             <button onClick={() => onPageChange('contact')} className={`font-bold text-sm uppercase tracking-wider transition-colors whitespace-nowrap ${currentPage === 'contact' ? 'text-[#14532d]' : 'text-gray-900 hover:text-[#14532d]'}`}>
               Contact
             </button>
-            <button onClick={() => onPageChange('science')} className={`font-bold text-sm uppercase tracking-wider transition-colors whitespace-nowrap ${currentPage === 'science' ? 'text-[#14532d]' : 'text-gray-900 hover:text-[#14532d]'}`}>
-              Our Science
-            </button>
+
           </nav>
 
           {/* Icons & CTA */}
@@ -472,9 +470,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageChange, currentPage, onCar
                 <button onClick={() => handleMobileNav('about')} className={`text-left font-black text-xl tracking-tight transition-colors py-3 ${currentPage === 'about' ? 'text-[#14532d]' : 'text-gray-900'}`}>
                   ABOUT US
                 </button>
-                <button onClick={() => handleMobileNav('science')} className={`text-left font-black text-xl tracking-tight transition-colors py-3 ${currentPage === 'science' ? 'text-[#14532d]' : 'text-gray-900'}`}>
-                  OUR SCIENCE
-                </button>
+
                 <button onClick={() => handleMobileNav('contact')} className={`text-left font-black text-xl tracking-tight transition-colors py-3 ${currentPage === 'contact' ? 'text-[#14532d]' : 'text-gray-900'}`}>
                   CONTACT
                 </button>

@@ -144,47 +144,7 @@ export const ContactPage: React.FC = () => {
   );
 };
 
-export const SciencePage: React.FC = () => {
-    return (
-      <div className="relative z-20 py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-gray-900">
-        <div className="text-center mb-10 md:mb-16">
-          <h1 className="font-display font-black text-4xl md:text-7xl tracking-tighter mb-4 md:mb-6 uppercase">
-            OUR <span className="text-[#16a34a]">SCIENCE</span>
-          </h1>
-          <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto font-medium leading-relaxed">
-            At Quins Wellness Centre, we don't guess. We test. Our formulations are built on clinical research and rigorous scientific validation.
-          </p>
-        </div>
-  
-        <div className="grid md:grid-cols-2 gap-12 items-center mb-24 text-left">
-          <div className="relative aspect-square rounded-3xl overflow-hidden border border-gray-200 shadow-xl">
-            <img src="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop" alt="Microscope" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-3xl p-8 md:p-12 shadow-xl">
-            <h2 className="font-display font-bold text-3xl mb-6 text-[#16a34a]">Evidence-Based Formulation</h2>
-            <p className="text-gray-600 leading-relaxed mb-6">
-              Every ingredient we select is backed by peer-reviewed clinical trials. We use the exact dosages proven to be effective in human studies, never hiding behind "proprietary blends."
-            </p>
-            <ul className="space-y-4 text-gray-600 font-medium">
-              <li className="flex items-start gap-3">
-                <ShieldCheck className="w-6 h-6 text-[#15803d] shrink-0" />
-                <span>Third-party tested for heavy metals, microbes, and allergens.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <ShieldCheck className="w-6 h-6 text-[#15803d] shrink-0" />
-                <span>Bioavailable forms of vitamins (e.g., Methylcobalamin instead of Cyanocobalamin).</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <ShieldCheck className="w-6 h-6 text-[#15803d] shrink-0" />
-                <span>Manufactured in cGMP certified facilities.</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    );
-};
+
 
 export const PrivacyPage: React.FC = () => {
     return (

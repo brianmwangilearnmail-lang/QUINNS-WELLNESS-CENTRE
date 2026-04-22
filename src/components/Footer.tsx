@@ -40,7 +40,7 @@ export const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
             <h4 className="font-bold text-lg mb-6 uppercase tracking-wider">Company</h4>
             <ul className="space-y-4 text-gray-400 font-medium">
               <li><button onClick={() => onPageChange('about')} className="hover:text-white transition-colors">About Us</button></li>
-              <li><button onClick={() => onPageChange('science')} className="hover:text-white transition-colors">Our Science</button></li>
+
             </ul>
           </div>
           <div>

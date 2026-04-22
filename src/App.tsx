@@ -4,7 +4,7 @@ import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
 import { HomePage } from './pages/HomePage';
 import { AboutPage } from './pages/AboutPage';
-import { ContactPage, SciencePage, PrivacyPage } from './pages/StaticPages';
+import { ContactPage, PrivacyPage } from './pages/StaticPages';
 import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,7 +12,7 @@ import { SiteProvider } from './context/SiteContext';
 import { CartProvider } from './context/CartContext';
 import { WhatsAppButton } from './components/WhatsAppButton';
 
-export type Page = 'home' | 'about' | 'contact' | 'science' | 'privacy' | 'admin-login' | 'admin-dashboard' | 'admin';
+export type Page = 'home' | 'about' | 'contact' | 'privacy' | 'admin-login' | 'admin-dashboard' | 'admin';
 
 function MainApp() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -28,7 +28,7 @@ function MainApp() {
       const hash = window.location.hash.replace('#', '');
       const rawPath = window.location.pathname.replace(/^\//, '');
 
-      const validPages = ['home', 'about', 'contact', 'science', 'privacy', 'admin-login', 'admin-dashboard', 'admin'];
+      const validPages = ['home', 'about', 'contact', 'privacy', 'admin-login', 'admin-dashboard', 'admin'];
       let targetPage: Page = 'home';
 
       // Hash takes priority for in-app navigation; path used for direct URL entry
@@ -78,7 +78,7 @@ function MainApp() {
       case 'home': return <HomePage activeBrand={activeBrand} onBrandFilter={setActiveBrand} />;
       case 'about': return <AboutPage />;
       case 'contact': return <ContactPage />;
-      case 'science': return <SciencePage />;
+
       case 'privacy': return <PrivacyPage />;
       case 'admin-login': return <AdminLoginPage onLogin={handleLogin} onBack={() => { setCurrentPage('home'); window.location.hash='home'; }} />;
       case 'admin-dashboard': return isAuthenticated ? <AdminDashboardPage onLogout={handleLogout} /> : <AdminLoginPage onLogin={handleLogin} onBack={() => { setCurrentPage('home'); window.location.hash='home'; }} />;
