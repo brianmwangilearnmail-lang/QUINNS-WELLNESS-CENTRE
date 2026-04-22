@@ -88,7 +88,7 @@ interface SiteContextType {
     createOrder: (order: Omit<Order, 'id' | 'created_at'>, items: Array<{ product_id: number, quantity: number, price_at_sale: number }>) => Promise<{ success: boolean; error?: string }>;
     updateOrderStatus: (orderId: number, status: Order['status']) => Promise<void>;
     addBrand: (name: string) => void;
-    deleteBrand: (id: string) => void;
+    deleteBrand: (id: string, name: string) => Promise<void>;
     initialLoading: boolean;
 }
 
@@ -156,12 +156,30 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     };
 
-    const deleteBrand = (id: string) => {
+    const deleteBrand = async (id: string, name: string) => {
         setCustomBrands(prev => {
             const updated = prev.filter(b => b.id !== id);
             localStorage.setItem('aba_custom_brands', JSON.stringify(updated));
             return updated;
         });
+
+        const hasProducts = products.some(p => p.brand === name);
+        if (hasProducts) {
+            const { error } = await supabase
+                .from('products')
+                .update({ brand: '' })
+                .eq('brand', name);
+            
+            if (error) {
+                console.error('Error removing brand from products:', error);
+            } else {
+                setProducts(prev => {
+                    const next = prev.map(p => p.brand === name ? { ...p, brand: '' } : p);
+                    localStorage.setItem('aba_products', JSON.stringify(next));
+                    return next;
+                });
+            }
+        }
     };
 
     // Initial Fetch

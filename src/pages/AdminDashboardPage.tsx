@@ -783,22 +783,26 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {!isFromProducts && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setConfirmModal({
-                                          title: 'Delete Brand',
-                                          message: `Remove "${brand.name}" from the brand list?`,
-                                          confirmText: 'DELETE',
-                                          onConfirm: () => { deleteBrand(brand.id); setConfirmModal(null); setNotification({ message: 'Brand removed', type: 'success' }); }
-                                        });
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-50 rounded-xl transition-all"
-                                    >
-                                      <Trash2 className="w-4 h-4 text-red-400" />
-                                    </button>
-                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setConfirmModal({
+                                        title: 'Delete Brand',
+                                        message: isFromProducts 
+                                          ? `Remove "${brand.name}"? This will also unassign the brand from ${productCount} product(s).` 
+                                          : `Remove "${brand.name}" from the brand list?`,
+                                        confirmText: 'DELETE',
+                                        onConfirm: async () => { 
+                                          await deleteBrand(brand.id, brand.name); 
+                                          setConfirmModal(null); 
+                                          setNotification({ message: 'Brand removed', type: 'success' }); 
+                                        }
+                                      });
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-50 rounded-xl transition-all"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-400" />
+                                  </button>
                                   {isFromProducts && (
                                     <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest mr-2">Auto</span>
                                   )}
