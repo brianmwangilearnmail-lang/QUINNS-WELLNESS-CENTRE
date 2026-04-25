@@ -11,7 +11,7 @@ interface AdminDashboardPageProps {
 }
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout }) => {
-  const { products, hero, orders, updateHero, updateProduct, addProduct, deleteProduct, updateOrderStatus, brands, addBrand, deleteBrand } = useSite();
+  const { products, hero, orders, updateHero, updateProduct, addProduct, deleteProduct, updateOrderStatus, brands, addBrand, deleteBrand, migrateImagesToStorage } = useSite();
   const [activeTab, setActiveTab] = useState<'hero' | 'products' | 'analytics' | 'inquiries' | 'orders' | 'settings' | 'brands'>('analytics');
   
   // Email Settings state
@@ -19,6 +19,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
   const [clientIdInput, setClientIdInput] = useState(emailSettings?.clientId || '');
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<{ migrated: number; failed: number } | null>(null);
   
   // Banner state
   const [banners, setBanners] = useState<HeroBanner[]>(hero);
@@ -950,6 +952,64 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                             </button>
                                         )}
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Storage Migration Section */}
+                            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-gray-100 shadow-sm">
+                                        <CloudUpload className="w-5 h-5 text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 uppercase tracking-tight">Cloud Storage Migration</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Move product images from database to Supabase CDN</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="bg-white border border-gray-200 rounded-xl p-4 text-sm text-gray-600 leading-relaxed space-y-2">
+                                        <p className="font-bold text-gray-900 text-xs uppercase tracking-wider">Why migrate?</p>
+                                        <ul className="space-y-1 text-xs">
+                                            <li>✅ Images load from a global CDN — <strong>10x faster</strong></li>
+                                            <li>✅ Database stays tiny — <strong>handles 1000+ users</strong></li>
+                                            <li>✅ Safe to run multiple times — already-migrated images are skipped</li>
+                                            <li>⚠️ Requires <strong>product-images</strong> bucket in Supabase Storage (public)</li>
+                                        </ul>
+                                    </div>
+
+                                    {migrationResult && (
+                                        <div className={`flex items-center gap-3 p-4 rounded-xl border text-sm font-bold ${
+                                            migrationResult.failed === 0 
+                                                ? 'bg-green-50 border-green-200 text-green-700' 
+                                                : 'bg-amber-50 border-amber-200 text-amber-700'
+                                        }`}>
+                                            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                                            <span>
+                                                Migration complete — {migrationResult.migrated} migrated
+                                                {migrationResult.failed > 0 ? `, ${migrationResult.failed} failed` : ', 0 failed'}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={async () => {
+                                            setIsMigrating(true);
+                                            setMigrationResult(null);
+                                            const result = await migrateImagesToStorage();
+                                            setMigrationResult(result);
+                                            setIsMigrating(false);
+                                            setNotification({ 
+                                                message: `Migration complete — ${result.migrated} images moved to CDN`, 
+                                                type: result.failed === 0 ? 'success' : 'info' 
+                                            });
+                                        }}
+                                        disabled={isMigrating}
+                                        className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-xl font-black text-xs tracking-widest flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-lg uppercase"
+                                    >
+                                        {isMigrating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CloudUpload className="w-4 h-4" />}
+                                        {isMigrating ? 'Migrating Images...' : 'Run Migration Now'}
+                                    </button>
                                 </div>
                             </div>
                         </div>

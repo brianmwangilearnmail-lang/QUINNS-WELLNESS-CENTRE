@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { compressImage } from '../lib/compressImage';
+import { uploadProductImage, deleteProductImage } from '../lib/storageUpload';
 
 export interface Brand {
     id: string;
@@ -90,6 +91,7 @@ interface SiteContextType {
     updateOrderStatus: (orderId: number, status: Order['status']) => Promise<void>;
     addBrand: (name: string) => void;
     deleteBrand: (id: string, name: string) => Promise<void>;
+    migrateImagesToStorage: () => Promise<{ migrated: number; failed: number }>;
     initialLoading: boolean;
 }
 
@@ -297,7 +299,6 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchProducts = async () => {
         const { data, error } = await supabase
             .from('products')
-            // Only select fields actually used in the UI — reduces payload size
             .select('id,title,brand,composition,description,price,original_price,image,in_stock,created_at')
             .order('created_at', { ascending: true });
 
@@ -306,36 +307,16 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const saved = localStorage.getItem('aba_products');
             if (saved) setProducts(JSON.parse(saved));
         } else if (data) {
-            const mapped = await Promise.all(data.map(async (p: any) => {
-                let finalImage = p.image;
-                
-                // Self-healing database: If the image is a massive base64 string, compress it and save it back
-                if (finalImage && finalImage.startsWith('data:') && Math.round(finalImage.length / 1024) > 160) {
-                    try {
-                        const start = Date.now();
-                        finalImage = await compressImage(finalImage, 150);
-                        console.log(`[SiteContext] Compressed product ${p.id} image in ${Date.now() - start}ms`);
-                        
-                        // Fire-and-forget sync back to Supabase to fix the database bloat forever
-                        supabase.from('products').update({ image: finalImage }).eq('id', p.id).then(({error}) => {
-                            if (!error) console.log(`[SiteContext] Saved optimized image for product ${p.id} to Supabase.`);
-                        });
-                    } catch (e) {
-                        console.error('Compression failed for', p.id, e);
-                    }
-                }
-
-                return {
-                    id: p.id,
-                    title: p.title,
-                    composition: p.composition,
-                    description: p.description || '',
-                    brand: p.brand,
-                    price: parseFloat(p.price),
-                    originalPrice: p.original_price ? parseFloat(p.original_price) : undefined,
-                    image: finalImage,
-                    inStock: p.in_stock
-                };
+            const mapped = data.map((p: any) => ({
+                id: p.id,
+                title: p.title,
+                composition: p.composition,
+                description: p.description || '',
+                brand: p.brand,
+                price: parseFloat(p.price),
+                originalPrice: p.original_price ? parseFloat(p.original_price) : undefined,
+                image: p.image,
+                inStock: p.in_stock
             }));
             
             setProducts(mapped);
@@ -444,8 +425,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (updates.price !== undefined) dbUpdates.price = updates.price;
         if (updates.originalPrice !== undefined) dbUpdates.original_price = updates.originalPrice;
         if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock;
-        if (updates.image !== undefined) {
-             dbUpdates.image = updates.image ? await compressImage(updates.image, 150) : updates.image;
+        if (updates.image !== undefined && updates.image !== null) {
+            // Upload to Storage if it's a base64 string; keep as-is if already a URL
+            dbUpdates.image = await uploadProductImage(updates.image, id);
         }
 
         const { error } = await supabase
@@ -460,8 +442,12 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const addProduct = async (p: Omit<Product, 'id'>) => {
-        const processedImage = p.image ? await compressImage(p.image, 150) : p.image;
-        const { error } = await supabase
+        // Upload image to Supabase Storage first; get back a CDN URL
+        // We use a temporary ID for the filename; we'll use the real DB id if needed
+        const tempId = `new-${Date.now()}`;
+        const imageUrl = p.image ? await uploadProductImage(p.image, tempId) : p.image;
+
+        const { data, error } = await supabase
             .from('products')
             .insert([{
                 title: p.title,
@@ -470,9 +456,10 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 description: p.description,
                 price: p.price,
                 original_price: p.originalPrice,
-                image: processedImage,
+                image: imageUrl,
                 in_stock: p.inStock
-            }]);
+            }])
+            .select();
 
         if (error) {
             console.error('Error adding product:', error);
@@ -580,6 +567,55 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    /**
+     * One-click migration: uploads all existing base64 images to Supabase Storage
+     * and updates the DB records with the new CDN URLs.
+     * Safe to run multiple times — already-migrated products (HTTP URLs) are skipped.
+     */
+    const migrateImagesToStorage = async (): Promise<{ migrated: number; failed: number }> => {
+        const { data, error } = await supabase
+            .from('products')
+            .select('id, image');
+
+        if (error || !data) {
+            console.error('[Migration] Could not fetch products:', error);
+            return { migrated: 0, failed: 0 };
+        }
+
+        const toMigrate = data.filter(
+            (p: any) => p.image && p.image.startsWith('data:')
+        );
+
+        console.log(`[Migration] Found ${toMigrate.length} products with base64 images to migrate.`);
+
+        let migrated = 0;
+        let failed = 0;
+
+        for (const p of toMigrate) {
+            try {
+                // Compress before uploading to keep Storage tidy
+                const compressed = await compressImage(p.image, 150);
+                const url = await uploadProductImage(compressed, p.id);
+
+                if (url && !url.startsWith('data:')) {
+                    await supabase.from('products').update({ image: url }).eq('id', p.id);
+                    migrated++;
+                    console.log(`[Migration] ✅ Product ${p.id} → ${url}`);
+                } else {
+                    failed++;
+                }
+            } catch (e) {
+                console.error(`[Migration] ❌ Product ${p.id} failed:`, e);
+                failed++;
+            }
+        }
+
+        // Re-fetch products so UI instantly reflects new CDN URLs
+        await fetchProducts();
+        console.log(`[Migration] Complete. Migrated: ${migrated}, Failed: ${failed}`);
+        return { migrated, failed };
+    };
+
     return (
         <SiteContext.Provider value={{ 
             products, 
@@ -597,7 +633,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             createOrder,
             updateOrderStatus,
             addBrand,
-            deleteBrand
+            deleteBrand,
+            migrateImagesToStorage
         }}>
             {children}
         </SiteContext.Provider>
