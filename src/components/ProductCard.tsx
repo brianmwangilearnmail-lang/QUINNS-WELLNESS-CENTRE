@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { ShoppingCart, Package, Share2, Heart, RefreshCw, X, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Package, X, Plus, Minus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { Product } from '../context/SiteContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -121,7 +121,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Price</p>
-                    <p className="text-red-500 font-black text-3xl">Ksh.{(product.price * modalQuantity).toLocaleString()}.00</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-red-500 font-black text-3xl">Ksh.{(product.price * modalQuantity).toLocaleString()}.00</p>
+                      {product.originalPrice && (
+                        <p className="text-gray-400 line-through text-lg font-bold">Ksh.{(product.originalPrice * modalQuantity).toLocaleString()}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 bg-gray-100 rounded-full p-1 border border-gray-200">
                     <button
@@ -167,18 +172,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
           </span>
         )}
 
-        {/* Icons */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-          <button className="w-8 h-8 rounded-full bg-white shadow border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors">
-            <Heart className="w-4 h-4" />
-          </button>
-          <button className="w-8 h-8 rounded-full bg-white shadow border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-400 transition-colors">
-            <Share2 className="w-4 h-4" />
-          </button>
-          <button className="w-8 h-8 rounded-full bg-white shadow border border-gray-100 flex items-center justify-center text-gray-400 hover:text-green-500 transition-colors">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
+
 
         {product.image && !imgError ? (
           <>
@@ -209,7 +203,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
         <div>
           <h3 className="font-bold text-gray-900 text-xs md:text-base leading-tight line-clamp-2">{product.title}</h3>
           <p className="text-gray-500 text-xs mt-1 leading-relaxed line-clamp-2 hidden md:block">{descriptionPreview}</p>
-          <p className="text-red-500 font-black text-sm md:text-xl mt-1 md:mt-2">Ksh.{product.price.toLocaleString()}.00</p>
+          <div className="flex items-baseline gap-2 mt-1 md:mt-2">
+            <p className="text-red-500 font-black text-sm md:text-xl">Ksh.{product.price.toLocaleString()}</p>
+            {product.originalPrice && (
+              <p className="text-gray-400 line-through text-[10px] md:text-sm font-bold">Ksh.{product.originalPrice.toLocaleString()}</p>
+            )}
+          </div>
         </div>
 
         {/* Quantity row */}

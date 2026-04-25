@@ -195,8 +195,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
       title: '',
       composition: '',
       description: '',
-      brand: '',
       price: 0,
+      originalPrice: 0,
       image: '',
       inStock: true
     });
@@ -1335,8 +1335,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                 placeholder="e.g. Omega-3 Fish Oil"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-left">
-                            <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-4 text-left">
+                            <div className="space-y-2 col-span-1">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Brand</label>
                                 {!useCustomBrand ? (
                                   <div className="flex gap-2">
@@ -1347,7 +1347,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                         if (e.target.value === '__custom__') { setUseCustomBrand(true); setEditingProduct({...editingProduct!, brand: ''}); }
                                         else setEditingProduct({...editingProduct!, brand: e.target.value});
                                       }}
-                                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-sm"
+                                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-xs"
                                     >
                                       <option value="">Select brand...</option>
                                       {brands.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
@@ -1362,7 +1362,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                       autoFocus
                                       value={editingProduct?.brand || ''}
                                       onChange={(e) => setEditingProduct({...editingProduct!, brand: e.target.value})}
-                                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-sm"
+                                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-xs"
                                       placeholder="e.g. Natural Factors"
                                     />
                                     <button type="button" onClick={() => { setUseCustomBrand(false); setEditingProduct({...editingProduct!, brand: ''}); }} className="px-3 py-2 text-xs text-gray-400 hover:text-gray-700 border border-gray-200 rounded-xl">
@@ -1372,14 +1372,24 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Price (KSh)</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-[#14532d] ml-1">Sale Price (KSh)</label>
                                 <input 
                                     type="number" 
                                     required
                                     value={editingProduct?.price || ''}
                                     onChange={(e) => setEditingProduct({...editingProduct!, price: Number(e.target.value)})}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-sm" 
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-xs" 
                                     placeholder="0"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Discount Price (Strike)</label>
+                                <input 
+                                    type="number" 
+                                    value={editingProduct?.originalPrice || ''}
+                                    onChange={(e) => setEditingProduct({...editingProduct!, originalPrice: e.target.value ? Number(e.target.value) : undefined})}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#14532d] transition-colors text-xs" 
+                                    placeholder="e.g. 25999"
                                 />
                             </div>
                         </div>

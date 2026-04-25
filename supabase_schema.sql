@@ -9,6 +9,7 @@ CREATE TABLE products (
   brand TEXT NOT NULL,
   composition TEXT NOT NULL,
   price NUMERIC NOT NULL,
+  original_price NUMERIC,
   image TEXT,
   in_stock BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -104,3 +105,4 @@ CREATE TABLE IF NOT EXISTS contact_messages (
 -- Schema Migration: Separate Composition and Description
 -- Run this in your Supabase SQL editor to update existing tables without losing data!
 ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS original_price NUMERIC;

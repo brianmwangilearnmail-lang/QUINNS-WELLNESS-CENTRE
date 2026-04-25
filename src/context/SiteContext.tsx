@@ -14,6 +14,7 @@ export interface Product {
     description: string;
     brand: string;
     price: number;
+    originalPrice?: number;
     image?: string;
     inStock: boolean;
 }
@@ -297,7 +298,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data, error } = await supabase
             .from('products')
             // Only select fields actually used in the UI — reduces payload size
-            .select('id,title,brand,composition,description,price,image,in_stock,created_at')
+            .select('id,title,brand,composition,description,price,original_price,image,in_stock,created_at')
             .order('created_at', { ascending: true });
 
         if (error) {
@@ -331,6 +332,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     description: p.description || '',
                     brand: p.brand,
                     price: parseFloat(p.price),
+                    originalPrice: p.original_price ? parseFloat(p.original_price) : undefined,
                     image: finalImage,
                     inStock: p.in_stock
                 };
@@ -440,6 +442,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (updates.composition !== undefined) dbUpdates.composition = updates.composition;
         if (updates.description !== undefined) dbUpdates.description = updates.description;
         if (updates.price !== undefined) dbUpdates.price = updates.price;
+        if (updates.originalPrice !== undefined) dbUpdates.original_price = updates.originalPrice;
         if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock;
         if (updates.image !== undefined) {
              dbUpdates.image = updates.image ? await compressImage(updates.image, 150) : updates.image;
@@ -466,6 +469,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 composition: p.composition,
                 description: p.description,
                 price: p.price,
+                original_price: p.originalPrice,
                 image: processedImage,
                 in_stock: p.inStock
             }]);
