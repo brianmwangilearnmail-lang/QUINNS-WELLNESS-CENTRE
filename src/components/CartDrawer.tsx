@@ -262,10 +262,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                           </p>
 
                           <p>
-                            If you are outside Nairobi CBD, you will as well kindly cater between (<span className="font-bold">Sh.100 – sh.400</span>) for delivery
+                            If you are outside Nairobi CBD, you will as well kindly cater between (<span className="font-bold">Sh.100 – sh.400</span>) for delivery.
                           </p>
 
-                          <div className="pt-1 border-t border-gray-100 space-y-1">
+                          <div className="bg-[#15803d]/5 border border-[#15803d]/20 p-3 rounded-xl mt-2">
+                            <p className="font-bold text-[#14532d] mb-1">Please pay first before delivery using:</p>
+                            <div className="font-mono text-sm space-y-0.5 text-gray-900">
+                              <p><span className="font-bold">Paybill:</span> 516600</p>
+                              <p><span className="font-bold">Account No:</span> 5925729001</p>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 mt-2 border-t border-gray-100 space-y-1">
                             <p className="font-bold text-gray-500 uppercase text-[10px] tracking-widest">NB:</p>
                             <p>
                               1. We do <span className="font-black">FREE delivery</span> for orders worth <span className="font-black">ksh.3000 <em>and above</em></span>.
