@@ -163,7 +163,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
 
   // ─── CARD (shared layout) ──────────────────────────────────────
   const cardContent = (
-    <div id={`product-${product.id}`} className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${variant === 'new-arrival' ? 'min-w-[200px] w-[200px] md:min-w-[260px] md:w-[260px]' : ''}`}>
+    <div id={`product-${product.id}`} className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full ${variant === 'new-arrival' ? 'min-w-[200px] w-[200px] md:min-w-[260px] md:w-[260px]' : ''}`}>
       {/* Image area */}
       <div className="relative bg-gray-50 aspect-square flex items-center justify-center p-3 md:p-6">
         {variant === 'default' && (
@@ -212,7 +212,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
         </div>
 
         {/* Quantity row */}
-        <div className="flex items-center gap-1.5 md:gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 mt-auto">
           <button
             onClick={e => { e.stopPropagation(); setQuantity(q => Math.max(1, q - 1)); }}
             className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-200 font-bold transition-colors text-sm"
@@ -225,7 +225,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-1.5 md:gap-2 mt-auto">
+        <div className="flex gap-1.5 md:gap-2">
           <button
             onClick={handleAddToCart}
             className="flex-1 bg-[#15803d] hover:bg-[#14532d] text-white py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all flex items-center justify-center gap-1 md:gap-2 shadow-sm active:scale-95"
