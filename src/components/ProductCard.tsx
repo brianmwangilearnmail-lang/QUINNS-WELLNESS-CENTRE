@@ -163,7 +163,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
 
   // ─── CARD (shared layout) ──────────────────────────────────────
   const cardContent = (
-    <div id={`product-${product.id}`} className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full ${variant === 'new-arrival' ? 'min-w-[200px] w-[200px] md:min-w-[260px] md:w-[260px]' : ''}`}>
+    <div 
+      id={`product-${product.id}`} 
+      className={`bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer ${variant === 'new-arrival' ? 'min-w-[200px] w-[200px] md:min-w-[260px] md:w-[260px]' : ''}`}
+      onClick={() => { setModalQuantity(1); setIsModalOpen(true); }}
+    >
       {/* Image area */}
       <div className="relative bg-gray-50 aspect-square flex items-center justify-center p-3 md:p-6">
         {variant === 'default' && (
@@ -234,7 +238,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
             {added ? '✓' : 'Add'}
           </button>
           <button
-            onClick={() => { setModalQuantity(1); setIsModalOpen(true); }}
+            onClick={(e) => { e.stopPropagation(); setModalQuantity(1); setIsModalOpen(true); }}
             className="flex-1 border border-gray-200 text-gray-700 hover:border-[#15803d] hover:text-[#15803d] py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all"
           >
             Details
