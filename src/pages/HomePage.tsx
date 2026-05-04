@@ -21,6 +21,8 @@ export const HomePage: React.FC<HomePageProps> = ({ activeBrand, onBrandFilter }
 
   return (
     <>
+      {/* Visually hidden h1 for SEO — tells Google what this page is about */}
+      <h1 className="sr-only">Quins Wellness Centre — Premium Supplements in Nairobi, Kenya</h1>
       <Hero />
       <NewArrivalSlider />
 
