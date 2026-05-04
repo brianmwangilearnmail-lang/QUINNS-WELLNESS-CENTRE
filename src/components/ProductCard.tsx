@@ -96,7 +96,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
                 {product.brand}
               </span>
 
-              <h2 className="font-display font-bold text-2xl md:text-3xl text-gray-900 leading-tight mb-5">
+              <h2 className="font-display font-bold text-xl md:text-3xl text-gray-900 leading-tight mb-4 md:mb-5">
                 {product.title}
               </h2>
 
@@ -122,7 +122,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
                   <div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Price</p>
                     <div className="flex items-baseline gap-2">
-                      <p className="text-red-500 font-black text-3xl">Ksh.{(product.price * modalQuantity).toLocaleString()}.00</p>
+                      <p className="text-red-500 font-black text-2xl md:text-3xl">Ksh.{(product.price * modalQuantity).toLocaleString()}.00</p>
                       {product.originalPrice && (
                         <p className="text-gray-400 line-through text-lg font-bold">Ksh.{(product.originalPrice * modalQuantity).toLocaleString()}</p>
                       )}
@@ -205,10 +205,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, variant = 'de
       {/* Content */}
       <div className="p-3 md:p-4 flex flex-col gap-2 md:gap-3 flex-grow">
         <div>
-          <h3 className="font-bold text-gray-900 text-xs md:text-base leading-tight line-clamp-2">{product.title}</h3>
+          <h3 className="font-bold text-gray-900 text-[11px] md:text-base leading-tight line-clamp-2">{product.title}</h3>
           <p className="text-gray-500 text-xs mt-1 leading-relaxed line-clamp-2 hidden md:block">{descriptionPreview}</p>
           <div className="flex items-baseline gap-2 mt-1 md:mt-2">
-            <p className="text-red-500 font-black text-sm md:text-xl">Ksh.{product.price.toLocaleString()}</p>
+            <p className="text-red-500 font-black text-xs md:text-xl">Ksh.{product.price.toLocaleString()}</p>
             {product.originalPrice && (
               <p className="text-gray-400 line-through text-[10px] md:text-sm font-bold">Ksh.{product.originalPrice.toLocaleString()}</p>
             )}
