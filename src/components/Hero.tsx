@@ -102,11 +102,19 @@ export const Hero: React.FC = () => {
       onMouseLeave={() => setIsPaused(false)}
       {...swipe}
     >
-      {/* Slide container — 16:9 ratio, capped at 80vh */}
-      <div
-        className="relative w-full"
-        style={{ paddingBottom: 'min(56.25%, 80vh)' }}
-      >
+      {/* Slide container — natural height based on image */}
+      <div className="relative w-full bg-black">
+        {/* Invisible image establishes the exact height needed so we have no black bars */}
+        {currentBanner?.image ? (
+          <img 
+            src={currentBanner.image} 
+            className="w-full h-auto opacity-0 pointer-events-none block" 
+            alt="" 
+            aria-hidden="true" 
+          />
+        ) : (
+          <div style={{ paddingBottom: 'min(56.25%, 80vh)' }} />
+        )}
         <AnimatePresence initial={false} custom={direction} mode="sync">
           <motion.div
             key={currentBanner?.id ?? current}
@@ -137,7 +145,7 @@ export const Hero: React.FC = () => {
               <img
                 src={currentBanner.image}
                 alt="Banner"
-                className="w-full h-full object-contain md:object-cover"
+                className="w-full h-full object-cover"
                 draggable={false}
               />
             ) : (
